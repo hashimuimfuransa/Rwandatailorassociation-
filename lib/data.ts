@@ -1,0 +1,446 @@
+import {
+  Users,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Handshake,
+  TrendingUp,
+  Landmark,
+  Megaphone,
+  Globe2,
+} from "lucide-react";
+import type {
+  NavLink,
+  StatItem,
+  ServiceItem,
+  PartnerLogo,
+  TailorProfile,
+  NewsItem,
+  EventItem,
+  GalleryItem,
+  Testimonial,
+  FooterLinkGroup,
+} from "@/types";
+
+export const NAV_LINKS: NavLink[] = [
+  { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },
+  { label: { en: "About", rw: "Abo Turi Bo" }, href: "#about" },
+  { label: { en: "Services", rw: "Serivisi" }, href: "#services" },
+  { label: { en: "Explore Businesses", rw: "Reba Ubucuruzi" }, href: "#tailors" },
+  { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "#why-join" },
+  { label: { en: "Events", rw: "Ibikorwa" }, href: "#events" },
+  { label: { en: "News", rw: "Amakuru" }, href: "#news" },
+  { label: { en: "Gallery", rw: "Amafoto" }, href: "#gallery" },
+  { label: { en: "Contact", rw: "Twandikire" }, href: "#contact" },
+];
+
+export const STATS: StatItem[] = [
+  {
+    icon: Users,
+    value: "2,500+",
+    label: { en: "Registered Tailors", rw: "Abadozi Biyandikishije" },
+  },
+  { icon: MapPin, value: "30", label: { en: "Districts", rw: "Uturere" } },
+  { icon: Briefcase, value: "500+", label: { en: "Businesses", rw: "Ubucuruzi" } },
+  {
+    icon: GraduationCap,
+    value: "100+",
+    label: { en: "Training Programs", rw: "Amahugurwa" },
+  },
+  { icon: Handshake, value: "20+", label: { en: "Partners", rw: "Abafatanyabikorwa" } },
+];
+
+export const PARTNERS: PartnerLogo[] = [
+  { name: "Private Sector Federation", short: "PSF", logo: "/images/partner-psf.png" },
+  { name: "Made in Rwanda", short: "Made in Rwanda", logo: "/images/partner-made-in-rwanda.jpg" },
+  { name: "Rwanda Development Board", short: "RDB", logo: "/images/partner-rdb.png" },
+  { name: "Rwanda TVET Board", short: "TVET Rwanda", logo: "/images/partner-rtb.jpg" },
+  { name: "Ministry of Trade and Industry", short: "MINICOM", logo: "/images/partner-minicom.png" },
+];
+
+export const SERVICES: ServiceItem[] = [
+  {
+    icon: TrendingUp,
+    title: { en: "Business Development", rw: "Iterambere ry'Ubucuruzi" },
+    description: {
+      en: "Support for business planning, branding, marketing and sustainable growth.",
+      rw: "Ubufasha mu gutegura gahunda z'ubucuruzi, kwamamaza ikirango, isoko no gukura mu buryo burambye.",
+    },
+  },
+  {
+    icon: GraduationCap,
+    title: { en: "Capacity Building", rw: "Kongera Ubushobozi" },
+    description: {
+      en: "Training, workshops and skills development to build professional tailors.",
+      rw: "Amahugurwa, inama mpuzabikorwa n'iterambere ry'ubumenyi kugira ngo habeho abadozi b'inzobere.",
+    },
+  },
+  {
+    icon: Users,
+    title: { en: "Networking", rw: "Guhuza Abadozi" },
+    description: {
+      en: "Connecting tailors, suppliers, designers and businesses across Rwanda.",
+      rw: "Guhuza abadozi, abaguzi b'ibikoresho, abanyabuhanga mu miterere n'ubucuruzi mu Rwanda hose.",
+    },
+  },
+  {
+    icon: Landmark,
+    title: { en: "Access to Finance", rw: "Kubona Inguzanyo" },
+    description: {
+      en: "Linking members to loans, grants and investment opportunities.",
+      rw: "Guhuza abanyamuryango n'inguzanyo, imfashanyo n'amahirwe yo gushora imari.",
+    },
+  },
+  {
+    icon: Megaphone,
+    title: { en: "Marketing Support", rw: "Ubufasha mu Kwamamaza" },
+    description: {
+      en: "Helping members promote their products and reach new markets.",
+      rw: "Gufasha abanyamuryango kwamamaza ibicuruzwa byabo no kugera ku masoko mashya.",
+    },
+  },
+  {
+    icon: Globe2,
+    title: { en: "Market Access", rw: "Kwinjira ku Isoko" },
+    description: {
+      en: "Connecting members to local and international market opportunities.",
+      rw: "Guhuza abanyamuryango n'amahirwe y'amasoko yo mu gihugu no mu mahanga.",
+    },
+  },
+];
+
+export const WHY_JOIN: Record<"en" | "rw", string[]> = {
+  en: [
+    "National recognition and certification",
+    "Access to business support services",
+    "Training and capacity building",
+    "Networking and partnerships",
+    "Representation and advocacy",
+    "Access to markets and opportunities",
+  ],
+  rw: [
+    "Kwemerwa n'igihugu no guhabwa impamyabushobozi",
+    "Kubona serivisi zo gufasha mu bucuruzi",
+    "Amahugurwa no kongera ubushobozi",
+    "Guhuza abantu no gufatanya",
+    "Kuhagararirwa no kuvugirwa",
+    "Kubona amasoko n'amahirwe",
+  ],
+};
+
+export const FEATURED_TAILORS: TailorProfile[] = [
+  {
+    name: "Uwase Marie Claire",
+    image: "/images/tailor-profile-2.jpg",
+    district: "Kigali, Nyarugenge",
+    business: "Elegant Designs",
+    rating: 4.8,
+    reviews: 24,
+    bio: {
+      en: "Marie Claire has run Elegant Designs in Nyarugenge for over a decade, specialising in tailored womenswear and bridal fittings. She is an RTA-certified trainer and mentors new members entering the trade.",
+      rw: "Marie Claire amaze imyaka irenga icumi ayobora Elegant Designs i Nyarugenge, yihariye imyenda y'abagore n'iy'ubukwe. Ni umwarimu wemejwe na RTA kandi ayobora abanyamuryango bashya binjira muri uyu mwuga.",
+    },
+    specialties: {
+      en: ["Bridal Wear", "Womenswear", "Alterations"],
+      rw: ["Imyenda y'Ubukwe", "Imyenda y'Abagore", "Guhindura Imyenda"],
+    },
+  },
+  {
+    name: "Habimana Jean Bosco",
+    image: "/images/tailor-profile-3.jpg",
+    district: "Huye, Huye",
+    business: "JB Tailoring",
+    rating: 4.7,
+    reviews: 18,
+    bio: {
+      en: "Jean Bosco founded JB Tailoring to bring made-to-measure men's suiting to Huye. He works closely with local schools to supply uniforms and trains apprentices through RTA's capacity-building program.",
+      rw: "Jean Bosco yashinze JB Tailoring kugira ngo azane imyenda y'abagabo ikorewe ku bipimo bya buri muntu i Huye. Akorana bya hafi n'amashuri yo mu karere atanga imyenda y'ishuri, akanigisha abiga umwuga binyuze muri gahunda ya RTA yo kongera ubushobozi.",
+    },
+    specialties: {
+      en: ["Menswear", "Suits", "School Uniforms"],
+      rw: ["Imyenda y'Abagabo", "Amakositimu", "Imyenda y'Amashuri"],
+    },
+  },
+  {
+    name: "Mukamana Vestine",
+    image: "/images/tailor-profile-1.jpg",
+    district: "Musanze, Musanze",
+    business: "Creative Stitches",
+    rating: 4.9,
+    reviews: 31,
+    bio: {
+      en: "Vestine leads Creative Stitches, blending traditional Rwandan textiles with modern silhouettes. Her workshop has grown into a small collective supporting five other tailors in Musanze.",
+      rw: "Vestine ayobora Creative Stitches, ahuza imyenda gakondo y'u Rwanda n'imisusire igezweho. Atelier ye yavuye ku giti kimwe igera ku itsinda rito rifasha abadozi batanu bandi i Musanze.",
+    },
+    specialties: {
+      en: ["Traditional Wear", "Custom Designs", "Accessories"],
+      rw: ["Imyenda Gakondo", "Ibisanzwe Byihariye", "Ibikoresho Byambara"],
+    },
+  },
+];
+
+export const NEWS: NewsItem[] = [
+  {
+    image: "/images/news-tvet-graduation.jpg",
+    category: { en: "NEWS", rw: "AMAKURU" },
+    date: { en: "May 15, 2024", rw: "15 Gicurasi 2024" },
+    title: {
+      en: "RTA partners with TVET Schools to promote Tailoring Skills",
+      rw: "RTA Ifatanyije n'Amashuri ya TVET Guteza Imbere Ubumenyi bw'Ubudozi",
+    },
+    excerpt: {
+      en: "A new partnership with TVET schools across Rwanda brings certified tailoring curricula to hundreds of aspiring tailors.",
+      rw: "Ubufatanye bushya n'amashuri ya TVET mu Rwanda hose buzana porogaramu y'ubudozi yemejwe ku bantu ibarirwa mu magana bifuza kuba abadozi.",
+    },
+    body: {
+      en: [
+        "Rwanda Tailors Association has signed a partnership with TVET schools across the country to promote tailoring as a certified, skills-based career path. The program embeds RTA's professional standards directly into the TVET curriculum.",
+        "Graduates of the program receive a nationally recognised certificate and are automatically eligible for RTA membership, giving them immediate access to the association's network, business support services, and market linkages.",
+        "The first cohort of graduates was celebrated at a ceremony attended by RTA leadership, TVET school administrators, and representatives from MINICOM and RDB, marking a major step toward formalising tailoring as a respected trade in Rwanda.",
+      ],
+      rw: [
+        "Ishyirahamwe ry'Abadozi b'u Rwanda ryashyize umukono ku masezerano y'ubufatanye n'amashuri ya TVET mu gihugu hose kugira ngo ubudozi buzamurwe bube umwuga wemejwe kandi ushingiye ku bumenyi. Iyi gahunda ishyira ubuziranenge bwa RTA muri porogaramu y'inyigisho za TVET.",
+        "Abarangije iyi porogaramu bahabwa impamyabushobozi yemewe n'igihugu, kandi bahabwa uburenganzira bwo kuba abanyamuryango ba RTA batinze, bikabaha uburyo bwo kwinjira mu muryango w'ishyirahamwe, serivisi zo gufasha mu bucuruzi, no guhuza n'amasoko.",
+        "Itsinda rya mbere ry'abarangije ryizihijwe mu muhango witabiriwe n'abayobozi ba RTA, abayobozi b'amashuri ya TVET, n'intumwa za MINICOM na RDB, bigaragaza intambwe ikomeye yo gutuma ubudozi buba umwuga wubahwa mu Rwanda.",
+      ],
+    },
+  },
+  {
+    image: "/images/gallery-model-outfit.jpg",
+    category: { en: "EVENT", rw: "IGIKORWA" },
+    date: { en: "June 20, 2024", rw: "20 Kamena 2024" },
+    title: {
+      en: "National Tailors Exhibition & Fashion Show 2024",
+      rw: "Imurikagurisha ry'Igihugu ry'Abadozi n'Iserukiramyenda 2024",
+    },
+    excerpt: {
+      en: "Members from all 30 districts showcased original designs at the annual National Tailors Exhibition & Fashion Show.",
+      rw: "Abanyamuryango baturutse mu turere 30 bagaragaje imyenda bahimbye mu Murikagurisha ry'Igihugu ry'Abadozi n'Iserukiramyenda rikorwa buri mwaka.",
+    },
+    body: {
+      en: [
+        "The National Tailors Exhibition & Fashion Show brought together RTA members from all 30 districts to showcase original designs blending traditional Rwandan craftsmanship with contemporary fashion.",
+        "Attendees browsed a marketplace of member-made garments and accessories, from tailored suits to hand-finished accessories, while a runway segment highlighted standout collections from the year's most innovative members.",
+        "The event also served as a networking hub, connecting tailors with retailers, buyers, and fellow designers looking to collaborate on future collections.",
+      ],
+      rw: [
+        "Imurikagurisha ry'Igihugu ry'Abadozi n'Iserukiramyenda ryahuje abanyamuryango ba RTA baturutse mu turere 30 twose kugira ngo bagaragaze imyenda bahimbye ihuza ubuhanzi gakondo bw'u Rwanda n'imideli igezweho.",
+        "Abitabiriye iyi nama basuye isoko ry'imyenda n'ibikoresho byakozwe n'abanyamuryango, kuva ku makositimu kugeza ku bikoresho byambarwa byakozwe n'intoki, mu gihe iserukiramyenda ryagaragaje imyenda idasanzwe y'abanyamuryango banoze mu mwaka.",
+        "Iki gikorwa cyanabaye ahantu ho guhuza abadozi n'abacuruzi, abaguzi, n'abandi banyabuhanga mu miterere bifuza gufatanya mu bikorwa bizaza.",
+      ],
+    },
+  },
+  {
+    image: "/images/news-training-selfie.jpg",
+    category: { en: "TRAINING", rw: "AMAHUGURWA" },
+    date: { en: "April 28, 2024", rw: "28 Mata 2024" },
+    title: {
+      en: "New Training Program for Modern Tailoring Techniques",
+      rw: "Porogaramu Nshya y'Amahugurwa ku Buhanga Bugezweho bw'Ubudozi",
+    },
+    excerpt: {
+      en: "A fresh cohort of members completed hands-on training in modern tailoring techniques and business fundamentals.",
+      rw: "Itsinda rishya ry'abanyamuryango ryarangije amahugurwa ku buhanga bugezweho bw'ubudozi n'ibanze by'ubucuruzi.",
+    },
+    body: {
+      en: [
+        "RTA's latest training program equipped members with modern tailoring techniques, covering pattern digitisation, industrial machine maintenance, and finishing methods used in export-quality garment production.",
+        "Beyond technical skills, the program included modules on pricing, customer service, and basic bookkeeping to help members run more sustainable businesses.",
+        "Participants who complete the program join a growing group of RTA-certified trainers who go on to mentor new members in their home districts.",
+      ],
+      rw: [
+        "Porogaramu nshya y'amahugurwa ya RTA yahaye abanyamuryango ubumenyi bw'uburyo bugezweho bw'ubudozi, harimo guhindura ibipimo mu buryo bwa mudasobwa, kubungabunga imashini z'inganda, n'uburyo bwo kurangiza imyenda mu buziranenge bwo kohereza hanze.",
+        "Uretse ubumenyi bw'ikoranabuhanga, iyi porogaramu yarimo n'ibice byigisha gushyiraho ibiciro, gufasha abakiriya, no kubika amakuru y'ibaruramari mu buryo bworoshye kugira ngo abanyamuryango bacunge neza ubucuruzi bwabo.",
+        "Abitabiriye barangije iyi porogaramu binjira mu itsinda rikura ry'abarimu bemejwe na RTA bagakomeza kuyobora abanyamuryango bashya mu turere basanzwemo.",
+      ],
+    },
+  },
+];
+
+export const EVENTS: EventItem[] = [
+  {
+    day: "22",
+    month: { en: "MAY", rw: "GIC" },
+    title: { en: "Advanced Fashion Design Workshop", rw: "Inama y'Amahugurwa Yisumbuye mu Mideli" },
+    location: { en: "Kigali, Nyarugenge", rw: "Kigali, Nyarugenge" },
+  },
+  {
+    day: "18",
+    month: { en: "JUN", rw: "KAM" },
+    title: { en: "National Tailors Exhibition 2024", rw: "Imurikagurisha ry'Igihugu ry'Abadozi 2024" },
+    location: { en: "Kigali Convention Centre", rw: "Kigali Convention Centre" },
+  },
+  {
+    day: "09",
+    month: { en: "JUL", rw: "NYA" },
+    title: { en: "Business Management Training", rw: "Amahugurwa yo Gucunga Ubucuruzi" },
+    location: { en: "Online Webinar", rw: "Ikiganiro kuri Interineti" },
+  },
+  {
+    day: "25",
+    month: { en: "AUG", rw: "KAN" },
+    title: { en: "Traditional Clothing Competition", rw: "Amarushanwa y'Imyenda Gakondo" },
+    location: { en: "Huye, Huye District", rw: "Huye, Akarere ka Huye" },
+  },
+];
+
+export const GALLERY: GalleryItem[] = [
+  {
+    image: "/images/gallery-robe.jpg",
+    alt: {
+      en: "Handcrafted striped robe on a mannequin",
+      rw: "Umwenda w'imirongo wakozwe n'intoki ku gishushanyo cy'umuntu",
+    },
+  },
+  {
+    image: "/images/gallery-dress.jpg",
+    alt: {
+      en: "Patterned dress with pockets on a mannequin",
+      rw: "Ikanzu ifite ibishushanyo n'imifuka ku gishushanyo cy'umuntu",
+    },
+  },
+  {
+    image: "/images/gallery-kimono.jpg",
+    alt: {
+      en: "Block-print kimono jacket on a mannequin",
+      rw: "Ikote rya kimono rifite ibishushanyo ku gishushanyo cy'umuntu",
+    },
+  },
+  {
+    image: "/images/gallery-vest.jpg",
+    alt: { en: "Multi-pocket utility vest", rw: "Ijaketi ifite imifuka myinshi" },
+  },
+  {
+    image: "/images/gallery-earrings.jpg",
+    alt: {
+      en: "Handmade fabric earrings",
+      rw: "Impete z'amatwi zakozwe mu mwenda n'intoki",
+    },
+  },
+  {
+    image: "/images/gallery-headbands.jpg",
+    alt: { en: "Colorful printed headbands", rw: "Imisipi y'umutwe ifite amabara menshi" },
+  },
+  {
+    image: "/images/gallery-scrunchies.jpg",
+    alt: {
+      en: "Assorted fabric scrunchies",
+      rw: "Uduce tw'umwenda two gucunga umusatsi tw'amoko atandukanye",
+    },
+  },
+  {
+    image: "/images/gallery-curtains.png",
+    alt: {
+      en: "Textured curtain panels with a sheer lace centre drape",
+      rw: "Amarido y'umwenda w'ikawa afite umwenda woroshye w'amashashi hagati",
+    },
+  },
+  {
+    image: "/images/gallery-moses-basket.png",
+    alt: {
+      en: "Ruffled lace moses basket with a bow trim",
+      rw: "Agatebo k'umwana gafite imigenurano n'akamenyetso k'umuhundo",
+    },
+  },
+  {
+    image: "/images/gallery-baby-bedding-pink.png",
+    alt: {
+      en: "Pink crib bedding set embroidered with butterflies",
+      rw: "Imyenda y'igitanda cy'umwana y'ibara ry'ipinki idozwe uduhurabwenge",
+    },
+  },
+  {
+    image: "/images/gallery-baby-bedding-blue.png",
+    alt: {
+      en: "Blue crib bedding set with a sheer canopy drape",
+      rw: "Imyenda y'igitanda cy'umwana y'ibara ry'ubururu ifite igitambaro cyoroshye hejuru",
+    },
+  },
+  {
+    image: "/images/gallery-bedding-teal.png",
+    alt: {
+      en: "Teal and white bedroom linen with a ruffled bed skirt",
+      rw: "Imyenda y'igitanda y'ibara ry'ubururu n'umweru ifite umupfundikizo w'imigenurano",
+    },
+  },
+  {
+    image: "/images/gallery-bedding-white-ruffle.png",
+    alt: {
+      en: "White ruffled comforter set with pillow shams",
+      rw: "Imyenda y'igitanda y'umweru ifite imigenurano n'imisego",
+    },
+  },
+  {
+    image: "/images/gallery-table-linen.png",
+    alt: {
+      en: "Embroidered table linen set with matching placemats",
+      rw: "Imyenda y'ameza idozwe hamwe n'ibipfukisho by'ameza bihuye",
+    },
+  },
+];
+
+export const TESTIMONIALS: Testimonial[] = [
+  {
+    name: "Ingabire Chantal",
+    role: { en: "Owner, Icyusa Designs", rw: "Nyiri, Icyusa Designs" },
+    image: "/images/testimonial-1.jpg",
+    quote: {
+      en: "RTA has helped my business grow through training, exposure and networking. I am proud to be a member.",
+      rw: "RTA yafashije ubucuruzi bwanjye gukura binyuze mu mahugurwa, kumenyekana no guhuza n'abandi. Nishimira kuba umunyamuryango.",
+    },
+  },
+  {
+    name: "Niyonkuru Eric",
+    role: { en: "Manager, Stitch Craft", rw: "Umuyobozi, Stitch Craft" },
+    image: "/images/testimonial-2.jpg",
+    quote: {
+      en: "The association brings tailors together and gives us a strong voice in the industry.",
+      rw: "Iri shyirahamwe rihuza abadozi kandi ridushoboza kuvuga ijwi rikomeye mu nganda.",
+    },
+  },
+  {
+    name: "Mukamana Vestine",
+    role: { en: "Creative Stitches", rw: "Creative Stitches" },
+    image: "/images/testimonial-3.jpg",
+    quote: {
+      en: "Through RTA, I accessed training that improved my skills and increased my customer base.",
+      rw: "Binyuze muri RTA, nabonye amahugurwa yateje imbere ubumenyi bwanjye kandi yongera umubare w'abakiriya banjye.",
+    },
+  },
+];
+
+export const FOOTER_LINKS: FooterLinkGroup[] = [
+  {
+    title: { en: "Quick Links", rw: "Amahuza Yihuse" },
+    links: [
+      { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },
+      { label: { en: "About Us", rw: "Abo Turi Bo" }, href: "#about" },
+      { label: { en: "Services", rw: "Serivisi" }, href: "#services" },
+      { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "#why-join" },
+      { label: { en: "News", rw: "Amakuru" }, href: "#news" },
+      { label: { en: "Contact", rw: "Twandikire" }, href: "#contact" },
+    ],
+  },
+  {
+    title: { en: "Services", rw: "Serivisi" },
+    links: [
+      { label: { en: "Business Development", rw: "Iterambere ry'Ubucuruzi" }, href: "#services" },
+      { label: { en: "Capacity Building", rw: "Kongera Ubushobozi" }, href: "#services" },
+      { label: { en: "Access to Finance", rw: "Kubona Inguzanyo" }, href: "#services" },
+      { label: { en: "Marketing Support", rw: "Ubufasha mu Kwamamaza" }, href: "#services" },
+      { label: { en: "Market Access", rw: "Kwinjira ku Isoko" }, href: "#services" },
+      { label: { en: "Networking", rw: "Guhuza Abadozi" }, href: "#services" },
+    ],
+  },
+  {
+    title: { en: "Resources", rw: "Ibikoresho" },
+    links: [
+      { label: { en: "Training Programs", rw: "Amahugurwa" }, href: "#services" },
+      { label: { en: "Guidelines", rw: "Amabwiriza" }, href: "#" },
+      { label: { en: "Forms & Documents", rw: "Impapuro n'Inyandiko" }, href: "#" },
+      { label: { en: "Opportunities", rw: "Amahirwe" }, href: "#" },
+      { label: { en: "Downloads", rw: "Gukuramo Inyandiko" }, href: "#" },
+      { label: { en: "FAQ", rw: "Ibibazo Bikunze Kubazwa" }, href: "#" },
+    ],
+  },
+];
