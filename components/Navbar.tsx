@@ -40,13 +40,13 @@ export default function Navbar() {
 
         <nav
           aria-label={t.navbar.primaryNav}
-          className="hidden items-center gap-1 xl:flex"
+          className="hidden items-center gap-0.5 2xl:flex"
         >
           {NAV_LINKS.map((link, i) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`relative rounded-full px-3.5 py-2 text-[14.5px] font-medium transition-colors hover:bg-primary-50 hover:text-primary-hover ${
+              className={`relative whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-medium transition-colors hover:bg-primary-50 hover:text-primary-hover ${
                 i === 0
                   ? "text-primary after:absolute after:bottom-0.5 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-primary"
                   : "text-ink/80"
@@ -104,7 +104,7 @@ export default function Navbar() {
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? t.navbar.closeMenu : t.navbar.openMenu}
           aria-expanded={open}
-          className="flex size-11 items-center justify-center rounded-full border border-border text-ink xl:hidden"
+          className="flex size-11 items-center justify-center rounded-full border border-border text-ink 2xl:hidden"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -117,7 +117,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-border bg-white xl:hidden"
+            className="overflow-hidden border-t border-border bg-white 2xl:hidden"
           >
             <nav aria-label={t.navbar.mobileNav} className="container-page flex flex-col py-4">
               {NAV_LINKS.map((link) => (
