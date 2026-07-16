@@ -19,21 +19,30 @@ export default function Hero() {
 
       <div className="container-page relative grid items-center gap-14 py-14 sm:py-16 lg:grid-cols-2 lg:py-20">
         <FadeIn>
-          <h1 className="text-balance font-heading text-4xl font-bold leading-[1.12] text-ink sm:text-5xl lg:text-[3.2rem]">
+          <h1 className="text-balance font-heading text-[1.75rem] font-bold leading-[1.15] text-ink sm:text-4xl sm:leading-[1.12] lg:text-[3.2rem]">
             {t.hero.titleLine1}
             <br />
             <span className="text-primary">{t.hero.titleLine2}</span>
             <br />
             {t.hero.titleLine3}
           </h1>
-          <p className="mt-6 max-w-lg text-balance text-[16.5px] leading-relaxed text-ink-muted">
+          <p className="mt-4 max-w-lg text-balance text-sm leading-relaxed text-ink-muted sm:mt-6 sm:text-[16.5px]">
             {t.hero.subtitle}
           </p>
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <Button asChild size="lg">
+          <div className="mt-7 flex items-center gap-2.5 sm:mt-9 sm:flex-wrap sm:gap-4">
+            <Button
+              asChild
+              size="lg"
+              className="h-11 flex-1 px-3 text-[13px] sm:h-14 sm:flex-none sm:px-8 sm:text-base"
+            >
               <Link href="#membership">{t.hero.ctaMember}</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-11 flex-1 px-3 text-[13px] sm:h-14 sm:flex-none sm:px-8 sm:text-base"
+            >
               <Link href="#services">{t.hero.ctaServices}</Link>
             </Button>
           </div>
