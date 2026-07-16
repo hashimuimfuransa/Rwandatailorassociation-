@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone, MapPin, Globe } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 import Logo from "@/components/Logo";
 import NewsletterForm from "@/components/NewsletterForm";
 import {
@@ -21,10 +21,9 @@ const SOCIALS = [
 ];
 
 const CONTACT = [
-  { icon: MapPin, text: "KN 63 St, Nyarugenge, Kigali, Rwanda" },
-  { icon: Phone, text: "+250 788 123 456" },
-  { icon: Mail, text: "info@rta.rw" },
-  { icon: Globe, text: "www.rta.rw" },
+  { icon: MapPin, text: "Kicukiro District, Gatenga Sector" },
+  { icon: Phone, text: "0788562837" },
+  { icon: Mail, text: "info.rta24@gmail.com" },
 ];
 
 export default function Footer() {
