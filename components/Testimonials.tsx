@@ -14,7 +14,7 @@ export default function Testimonials() {
       <div className="container-page">
         <SectionHeading title={t.testimonials.title} />
 
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-8 sm:grid-cols-2">
           {TESTIMONIALS.map((testimonial, i) => (
             <FadeIn key={testimonial.name} delay={i * 0.1}>
               <div className="flex h-full flex-col items-center rounded-2xl border border-border bg-background p-8 text-center">

@@ -43,14 +43,6 @@ export interface Dictionary {
     title: string;
     imageAlt: string;
   };
-  featuredTailors: {
-    title: string;
-    viewAll: string;
-    viewProfile: string;
-    contactPrefix: string;
-    reviewsWord: string;
-    portraitAlt: (name: string, business: string) => string;
-  };
   news: {
     title: string;
     viewAll: string;
@@ -156,15 +148,6 @@ const dictionary: Record<Locale, Dictionary> = {
       title: "Why Join RTA?",
       imageAlt: "A patterned Rwandan jacket displayed on a mannequin",
     },
-    featuredTailors: {
-      title: "Featured Tailors",
-      viewAll: "View All",
-      viewProfile: "View Profile",
-      contactPrefix: "Contact",
-      reviewsWord: "reviews",
-      portraitAlt: (name: string, business: string) =>
-        `Portrait of ${name}, tailor at ${business}`,
-    },
     news: {
       title: "Latest News",
       viewAll: "View All News",
@@ -268,15 +251,6 @@ const dictionary: Record<Locale, Dictionary> = {
     whyJoin: {
       title: "Kuki Wakwiyunga muri RTA?",
       imageAlt: "Ikote ry'Ikinyarwanda ryambitswe ku gishushanyo cy'umuntu",
-    },
-    featuredTailors: {
-      title: "Abadozi Bagaragara",
-      viewAll: "Reba Bose",
-      viewProfile: "Reba Umwirondoro",
-      contactPrefix: "Vugana na",
-      reviewsWord: "ibitekerezo",
-      portraitAlt: (name: string, business: string) =>
-        `Ifoto ya ${name}, umudozi muri ${business}`,
     },
     news: {
       title: "Amakuru Aheruka",

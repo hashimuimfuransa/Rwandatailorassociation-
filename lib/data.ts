@@ -14,7 +14,6 @@ import type {
   StatItem,
   ServiceItem,
   PartnerLogo,
-  TailorProfile,
   NewsItem,
   EventItem,
   GalleryItem,
@@ -26,7 +25,6 @@ export const NAV_LINKS: NavLink[] = [
   { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },
   { label: { en: "About", rw: "Abo Turi Bo" }, href: "#about" },
   { label: { en: "Services", rw: "Serivisi" }, href: "#services" },
-  { label: { en: "Explore Businesses", rw: "Reba Ubucuruzi" }, href: "#tailors" },
   { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "#why-join" },
   { label: { en: "Events", rw: "Ibikorwa" }, href: "#events" },
   { label: { en: "News", rw: "Amakuru" }, href: "#news" },
@@ -127,57 +125,6 @@ export const WHY_JOIN: Record<"en" | "rw", string[]> = {
     "Kubona amasoko n'amahirwe",
   ],
 };
-
-export const FEATURED_TAILORS: TailorProfile[] = [
-  {
-    name: "Uwase Marie Claire",
-    image: "/images/tailor-profile-2.jpg",
-    district: "Kigali, Nyarugenge",
-    business: "Elegant Designs",
-    rating: 4.8,
-    reviews: 24,
-    bio: {
-      en: "Marie Claire has run Elegant Designs in Nyarugenge for over a decade, specialising in tailored womenswear and bridal fittings. She is an RTA-certified trainer and mentors new members entering the trade.",
-      rw: "Marie Claire amaze imyaka irenga icumi ayobora Elegant Designs i Nyarugenge, yihariye imyenda y'abagore n'iy'ubukwe. Ni umwarimu wemejwe na RTA kandi ayobora abanyamuryango bashya binjira muri uyu mwuga.",
-    },
-    specialties: {
-      en: ["Bridal Wear", "Womenswear", "Alterations"],
-      rw: ["Imyenda y'Ubukwe", "Imyenda y'Abagore", "Guhindura Imyenda"],
-    },
-  },
-  {
-    name: "Habimana Jean Bosco",
-    image: "/images/tailor-profile-3.jpg",
-    district: "Huye, Huye",
-    business: "JB Tailoring",
-    rating: 4.7,
-    reviews: 18,
-    bio: {
-      en: "Jean Bosco founded JB Tailoring to bring made-to-measure men's suiting to Huye. He works closely with local schools to supply uniforms and trains apprentices through RTA's capacity-building program.",
-      rw: "Jean Bosco yashinze JB Tailoring kugira ngo azane imyenda y'abagabo ikorewe ku bipimo bya buri muntu i Huye. Akorana bya hafi n'amashuri yo mu karere atanga imyenda y'ishuri, akanigisha abiga umwuga binyuze muri gahunda ya RTA yo kongera ubushobozi.",
-    },
-    specialties: {
-      en: ["Menswear", "Suits", "School Uniforms"],
-      rw: ["Imyenda y'Abagabo", "Amakositimu", "Imyenda y'Amashuri"],
-    },
-  },
-  {
-    name: "Mukamana Vestine",
-    image: "/images/tailor-profile-1.jpg",
-    district: "Musanze, Musanze",
-    business: "Creative Stitches",
-    rating: 4.9,
-    reviews: 31,
-    bio: {
-      en: "Vestine leads Creative Stitches, blending traditional Rwandan textiles with modern silhouettes. Her workshop has grown into a small collective supporting five other tailors in Musanze.",
-      rw: "Vestine ayobora Creative Stitches, ahuza imyenda gakondo y'u Rwanda n'imisusire igezweho. Atelier ye yavuye ku giti kimwe igera ku itsinda rito rifasha abadozi batanu bandi i Musanze.",
-    },
-    specialties: {
-      en: ["Traditional Wear", "Custom Designs", "Accessories"],
-      rw: ["Imyenda Gakondo", "Ibisanzwe Byihariye", "Ibikoresho Byambara"],
-    },
-  },
-];
 
 export const NEWS: NewsItem[] = [
   {
@@ -381,30 +328,21 @@ export const GALLERY: GalleryItem[] = [
 
 export const TESTIMONIALS: Testimonial[] = [
   {
-    name: "Ingabire Chantal",
-    role: { en: "Owner, Icyusa Designs", rw: "Nyiri, Icyusa Designs" },
-    image: "/images/testimonial-1.jpg",
+    name: "Nshimiyimana Daniel",
+    role: { en: "President, RTA", rw: "Perezida, RTA" },
+    image: "/images/president-daniel.jpg",
+    quote: {
+      en: "RTA brings tailors together and gives us a strong, united voice to grow the industry across Rwanda.",
+      rw: "RTA ihuza abadozi kandi ituma dufite ijwi rikomeye kandi rihuriweho mu iterambere ry'inganda mu Rwanda hose.",
+    },
+  },
+  {
+    name: "Munezero Seleman Clementine",
+    role: { en: "Vice President, RTA", rw: "Visi Perezida, RTA" },
+    image: "/images/vice-president-clementine.jpg",
     quote: {
       en: "RTA has helped my business grow through training, exposure and networking. I am proud to be a member.",
       rw: "RTA yafashije ubucuruzi bwanjye gukura binyuze mu mahugurwa, kumenyekana no guhuza n'abandi. Nishimira kuba umunyamuryango.",
-    },
-  },
-  {
-    name: "Niyonkuru Eric",
-    role: { en: "Manager, Stitch Craft", rw: "Umuyobozi, Stitch Craft" },
-    image: "/images/testimonial-2.jpg",
-    quote: {
-      en: "The association brings tailors together and gives us a strong voice in the industry.",
-      rw: "Iri shyirahamwe rihuza abadozi kandi ridushoboza kuvuga ijwi rikomeye mu nganda.",
-    },
-  },
-  {
-    name: "Mukamana Vestine",
-    role: { en: "Creative Stitches", rw: "Creative Stitches" },
-    image: "/images/testimonial-3.jpg",
-    quote: {
-      en: "Through RTA, I accessed training that improved my skills and increased my customer base.",
-      rw: "Binyuze muri RTA, nabonye amahugurwa yateje imbere ubumenyi bwanjye kandi yongera umubare w'abakiriya banjye.",
     },
   },
 ];

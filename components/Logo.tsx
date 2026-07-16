@@ -24,13 +24,20 @@ export default function Logo({ variant = "dark", className }: LogoProps) {
       />
       <span className="leading-tight">
         <span
-          className={`block font-heading text-[15px] font-bold tracking-tight sm:text-[17px] ${
+          className={`block font-heading text-lg font-bold tracking-tight sm:hidden ${
+            isLight ? "text-white" : "text-ink"
+          }`}
+        >
+          RTA
+        </span>
+        <span
+          className={`hidden font-heading text-[15px] font-bold tracking-tight sm:block sm:text-[17px] ${
             isLight ? "text-white" : "text-ink"
           }`}
         >
           RWANDA TAILORS
         </span>
-        <span className="block font-heading text-[11px] font-semibold tracking-[0.2em] text-primary sm:text-xs">
+        <span className="hidden font-heading text-[11px] font-semibold tracking-[0.2em] text-primary sm:block sm:text-xs">
           ASSOCIATION
         </span>
       </span>

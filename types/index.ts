@@ -29,17 +29,6 @@ export interface PartnerLogo {
   logo: string;
 }
 
-export interface TailorProfile {
-  name: string;
-  image: string;
-  district: string;
-  business: string;
-  rating: number;
-  reviews: number;
-  bio: Localized;
-  specialties: LocalizedList;
-}
-
 export interface NewsItem {
   image: string;
   category: Localized;
