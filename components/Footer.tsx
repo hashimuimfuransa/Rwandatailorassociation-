@@ -31,7 +31,7 @@ export default function Footer() {
   const { locale, t } = useLanguage();
 
   return (
-    <footer id="contact" className="border-t border-border bg-ink text-white">
+    <footer id="contact" className="border-t border-border bg-footer text-white">
       <div className="container-page grid grid-cols-2 gap-10 py-16 sm:grid-cols-3 lg:grid-cols-6">
         <div className="col-span-2 sm:col-span-1">
           <Logo variant="light" />
