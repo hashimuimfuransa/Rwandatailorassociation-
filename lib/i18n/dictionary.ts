@@ -247,9 +247,9 @@ const dictionary: Record<Locale, Dictionary> = {
       mobileNav: "Kuri telefone",
     },
     hero: {
-      titleLine1: "Guha Ubushobozi Abadozi b'u Rwanda.",
-      titleLine2: "Twubaka Inganda",
-      titleLine3: "y'Imyenda mu Rwanda.",
+      titleLine1: "Guha Abadozi b'u Rwanda Ubushobozi.",
+      titleLine2: "Duteza Imbere",
+      titleLine3: "Ubudozi mu Rwanda.",
       subtitle:
         "Ishyirahamwe rihagarariye abadozi b'umwuga mu Rwanda hose. Turi kumwe kugira ngo duteze imbere ubuziranenge, ubuhanga buhanitse, iterambere ry'ubucuruzi n'inganda y'ubudozi ikomeye.",
       ctaMember: "Ba Umunyamuryango",
