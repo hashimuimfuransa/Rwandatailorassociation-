@@ -251,11 +251,11 @@ const dictionary: Record<Locale, Dictionary> = {
       titleLine2: "Twubaka Inganda",
       titleLine3: "y'Imyenda mu Rwanda.",
       subtitle:
-        "Ishyirahamwe nyamwuga rihagarariye abadozi b'umwuga mu Rwanda hose. Turi kumwe kugira ngo duteze imbere ubuziranenge, ubuhanga buhanitse, iterambere ry'ubucuruzi n'inganda y'ubudozi ikomeye.",
+        "Ishyirahamwe rihagarariye abadozi b'umwuga mu Rwanda hose. Turi kumwe kugira ngo duteze imbere ubuziranenge, ubuhanga buhanitse, iterambere ry'ubucuruzi n'inganda y'ubudozi ikomeye.",
       ctaMember: "Ba Umunyamuryango",
-      ctaServices: "Reba Serivisi Zacu",
+      ctaServices: "Menya Serivisi Zacu",
       imageAlt:
-        "Abadozi b'u Rwanda bakora ku mashini z'inganda z'ubudozi mu bikorwa byuzuye",
+        "Abadozi b'u Rwanda bakora ku mashini z'inganda mu bikorwa by'ubudozi byuzuye",
     },
     partners: {
       kicker: "Abafatanyabikorwa Bacu",
@@ -288,7 +288,7 @@ const dictionary: Record<Locale, Dictionary> = {
       ],
     },
     whyJoin: {
-      title: "Kuki Wakwiyunga muri RTA?",
+      title: "Kuki Wakwinjira muri RTA?",
       imageAlt: "Ikote ry'Ikinyarwanda ryambitswe ku gishushanyo cy'umuntu",
     },
     news: {
@@ -324,7 +324,7 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     footer: {
       about:
-        "Ishyirahamwe nyamwuga rihagarariye abadozi b'umwuga mu Rwanda hose. Turi kumwe twubaka inganda y'ubudozi ikomeye.",
+        "Ishyirahamwe rihagarariye abadozi b'umwuga mu Rwanda hose. Turi kumwe twubaka inganda y'ubudozi ikomeye.",
       quickLinks: "Amahuza Yihuse",
       contactUs: "Twandikire",
       newsletter: "Amakuru Agezweho",
@@ -349,7 +349,7 @@ const dictionary: Record<Locale, Dictionary> = {
       mapTitle: "Ikarita y'aho ibiro bya RTA biherereye",
       registerTitle: "Witeguye Kuba Umunyamuryango?",
       registerText:
-        "Uzuza ifishi yacu yemewe yo kwiyandikisha kuri interineti — iraboneka mu Cyongereza no mu Kinyarwanda kandi ibaza iminota itanu gusa.",
+        "Uzuza ifishi yacu yemewe yo kwiyandikisha kuri interineti — iraboneka mu Cyongereza no mu Kinyarwanda kandi imara iminota itanu gusa.",
       registerButton: "Iyandikishe Kuri Interineti",
       registerNewTab: "Fungura ifishi yose mu tabu rishya",
     },
