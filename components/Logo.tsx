@@ -11,7 +11,7 @@ export default function Logo({ variant = "dark", className }: LogoProps) {
 
   return (
     <Link
-      href="#home"
+      href="/"
       aria-label="Rwanda Tailors Association — home"
       className={`flex items-center gap-3 ${className ?? ""}`}
     >

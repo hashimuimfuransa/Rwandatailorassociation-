@@ -7,7 +7,6 @@ export interface Dictionary {
   };
   navbar: {
     changeLanguage: string;
-    login: string;
     becomeMember: string;
     openMenu: string;
     closeMenu: string;
@@ -45,6 +44,7 @@ export interface Dictionary {
   };
   news: {
     title: string;
+    description: string;
     viewAll: string;
     readMore: string;
     getInTouch: string;
@@ -110,7 +110,6 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     navbar: {
       changeLanguage: "Change language",
-      login: "Login",
       becomeMember: "Become Member",
       openMenu: "Open menu",
       closeMenu: "Close menu",
@@ -164,6 +163,8 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     news: {
       title: "Latest News",
+      description:
+        "Stay up to date with partnerships, trainings, events and member stories from across the RTA community.",
       viewAll: "View All News",
       readMore: "Read More",
       getInTouch: "Get in Touch",
@@ -230,7 +231,6 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     navbar: {
       changeLanguage: "Hindura ururimi",
-      login: "Injira",
       becomeMember: "Ba Umunyamuryango",
       openMenu: "Fungura menu",
       closeMenu: "Funga menu",
@@ -284,6 +284,8 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     news: {
       title: "Amakuru Aheruka",
+      description:
+        "Menya amakuru agezweho ku bufatanye, amahugurwa, ibikorwa n'inkuru z'abanyamuryango ba RTA.",
       viewAll: "Reba Amakuru Yose",
       readMore: "Soma Byinshi",
       getInTouch: "Twandikire",

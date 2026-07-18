@@ -65,14 +65,14 @@ export const SOCIAL_LINKS: SocialLink[] = [
 ];
 
 export const NAV_LINKS: NavLink[] = [
-  { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },
-  { label: { en: "About", rw: "Abo Turi Bo" }, href: "#about" },
-  { label: { en: "Services", rw: "Serivisi" }, href: "#services" },
-  { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "#why-join" },
-  { label: { en: "Events", rw: "Ibikorwa" }, href: "#events" },
-  { label: { en: "News", rw: "Amakuru" }, href: "#news" },
-  { label: { en: "Gallery", rw: "Amafoto" }, href: "#gallery" },
-  { label: { en: "Contact", rw: "Twandikire" }, href: "#contact" },
+  { label: { en: "Home", rw: "Ahabanza" }, href: "/#home" },
+  { label: { en: "About", rw: "Abo Turi Bo" }, href: "/#about" },
+  { label: { en: "Services", rw: "Serivisi" }, href: "/#services" },
+  { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "/#why-join" },
+  { label: { en: "Events", rw: "Ibikorwa" }, href: "/#events" },
+  { label: { en: "News", rw: "Amakuru" }, href: "/news" },
+  { label: { en: "Gallery", rw: "Amafoto" }, href: "/#gallery" },
+  { label: { en: "Contact", rw: "Twandikire" }, href: "/#contact" },
 ];
 
 export const STATS: StatItem[] = [
@@ -245,6 +245,31 @@ export const NEWS: NewsItem[] = [
       ],
     },
   },
+  {
+    image: "/images/isaac.png",
+    category: { en: "MEMBER SPOTLIGHT", rw: "UMUNYAMURYANGO" },
+    date: { en: "July 15, 2024", rw: "15 Nyakanga 2024" },
+    title: {
+      en: "Member Spotlight: Isaac and Isaac Manufacturing Center in Gisagara",
+      rw: "Umunyamuryango Wagaragaye: Isaac na Isaac Manufacturing Center i Gisagara",
+    },
+    excerpt: {
+      en: "RTA member Isaac has grown Isaac Manufacturing Center into one of Gisagara District's leading garment workshops.",
+      rw: "Umunyamuryango wa RTA, Isaac, yateje imbere Isaac Manufacturing Center kugeza kuba kimwe mu bubiko bw'imyenda bukomeye mu Karere ka Gisagara.",
+    },
+    body: {
+      en: [
+        "Isaac is a proud RTA member and the founder of Isaac Manufacturing Center, a garment production workshop based in Gisagara District, Southern Province, producing tailored clothing and uniforms for clients across the region.",
+        "Since joining RTA, Isaac has drawn on the association's training programs and business support services to modernise his workshop's equipment, formalise his pricing and operations, and take on larger production orders.",
+        "Today, Isaac Manufacturing Center employs a growing team of local tailors and is a source of pride in Gisagara, showing what steady investment in skills and quality can build for a tailoring business in Rwanda.",
+      ],
+      rw: [
+        "Isaac ni umunyamuryango w'ishema wa RTA kandi ni umushinze wa Isaac Manufacturing Center, ubukorikori bw'imyenda buherereye mu Karere ka Gisagara, Intara y'Amajyepfo, bukora imyenda n'imyambaro y'amashuri n'ibigo ku bakiriya bo muri iyo karere.",
+        "Kuva yinjira muri RTA, Isaac yakoresheje amahugurwa n'ubufasha mu bucuruzi bitangwa n'ishyirahamwe kugira ngo avugurure ibikoresho by'ubukorikori bwe, ashyireho uburyo bwiza bwo gushyiraho ibiciro n'imikorere, akaba yatangiye kwakira amabwiriza manini y'imyenda.",
+        "Muri iki gihe, Isaac Manufacturing Center ifite itsinda rikura ry'abadozi bo mu karere, kandi iri shusho ry'ishema muri Gisagara, igaragaza ibyo gushora mu bumenyi n'ubuziranenge byazana ku bucuruzi bw'ubudozi mu Rwanda.",
+      ],
+    },
+  },
 ];
 
 export const EVENTS: EventItem[] = [
@@ -394,29 +419,29 @@ export const FOOTER_LINKS: FooterLinkGroup[] = [
   {
     title: { en: "Quick Links", rw: "Amahuza Yihuse" },
     links: [
-      { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },
-      { label: { en: "About Us", rw: "Abo Turi Bo" }, href: "#about" },
-      { label: { en: "Services", rw: "Serivisi" }, href: "#services" },
-      { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "#why-join" },
-      { label: { en: "News", rw: "Amakuru" }, href: "#news" },
-      { label: { en: "Contact", rw: "Twandikire" }, href: "#contact" },
+      { label: { en: "Home", rw: "Ahabanza" }, href: "/#home" },
+      { label: { en: "About Us", rw: "Abo Turi Bo" }, href: "/#about" },
+      { label: { en: "Services", rw: "Serivisi" }, href: "/#services" },
+      { label: { en: "Membership", rw: "Ubunyamuryango" }, href: "/#why-join" },
+      { label: { en: "News", rw: "Amakuru" }, href: "/news" },
+      { label: { en: "Contact", rw: "Twandikire" }, href: "/#contact" },
     ],
   },
   {
     title: { en: "Services", rw: "Serivisi" },
     links: [
-      { label: { en: "Business Development", rw: "Iterambere ry'Ubucuruzi" }, href: "#services" },
-      { label: { en: "Capacity Building", rw: "Kongera Ubushobozi" }, href: "#services" },
-      { label: { en: "Access to Finance", rw: "Kubona Inguzanyo" }, href: "#services" },
-      { label: { en: "Marketing Support", rw: "Ubufasha mu Kwamamaza" }, href: "#services" },
-      { label: { en: "Market Access", rw: "Kwinjira ku Isoko" }, href: "#services" },
-      { label: { en: "Networking", rw: "Guhuza Abadozi" }, href: "#services" },
+      { label: { en: "Business Development", rw: "Iterambere ry'Ubucuruzi" }, href: "/#services" },
+      { label: { en: "Capacity Building", rw: "Kongera Ubushobozi" }, href: "/#services" },
+      { label: { en: "Access to Finance", rw: "Kubona Inguzanyo" }, href: "/#services" },
+      { label: { en: "Marketing Support", rw: "Ubufasha mu Kwamamaza" }, href: "/#services" },
+      { label: { en: "Market Access", rw: "Kwinjira ku Isoko" }, href: "/#services" },
+      { label: { en: "Networking", rw: "Guhuza Abadozi" }, href: "/#services" },
     ],
   },
   {
     title: { en: "Resources", rw: "Ibikoresho" },
     links: [
-      { label: { en: "Training Programs", rw: "Amahugurwa" }, href: "#services" },
+      { label: { en: "Training Programs", rw: "Amahugurwa" }, href: "/#services" },
       { label: { en: "Guidelines", rw: "Amabwiriza" }, href: "#" },
       { label: { en: "Forms & Documents", rw: "Impapuro n'Inyandiko" }, href: "#" },
       { label: { en: "Opportunities", rw: "Amahirwe" }, href: "#" },

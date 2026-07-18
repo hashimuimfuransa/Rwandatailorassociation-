@@ -91,9 +91,6 @@ export default function Navbar() {
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
-          <Button asChild variant="outline" size="sm">
-            <Link href="#login">{t.navbar.login}</Link>
-          </Button>
           <Button asChild size="sm">
             <Link href="/register">{t.navbar.becomeMember}</Link>
           </Button>
@@ -149,12 +146,7 @@ export default function Navbar() {
                 ))}
               </div>
 
-              <Button asChild variant="outline" className="mt-4 w-full">
-                <Link href="#login" onClick={() => setOpen(false)}>
-                  {t.navbar.login}
-                </Link>
-              </Button>
-              <Button asChild className="mt-3 w-full">
+              <Button asChild className="mt-4 w-full">
                 <Link href="/register" onClick={() => setOpen(false)}>
                   {t.navbar.becomeMember}
                 </Link>
