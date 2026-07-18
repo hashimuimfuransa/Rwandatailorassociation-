@@ -5,6 +5,9 @@ export interface Dictionary {
     langName: string;
     langShort: string;
   };
+  common: {
+    back: string;
+  };
   navbar: {
     changeLanguage: string;
     becomeMember: string;
@@ -107,6 +110,9 @@ const dictionary: Record<Locale, Dictionary> = {
     meta: {
       langName: "English",
       langShort: "EN",
+    },
+    common: {
+      back: "Back",
     },
     navbar: {
       changeLanguage: "Change language",
@@ -228,6 +234,9 @@ const dictionary: Record<Locale, Dictionary> = {
     meta: {
       langName: "Ikinyarwanda",
       langShort: "RW",
+    },
+    common: {
+      back: "Garuka",
     },
     navbar: {
       changeLanguage: "Hindura ururimi",

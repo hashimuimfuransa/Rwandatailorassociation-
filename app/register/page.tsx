@@ -2,6 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 import SectionHeading from "@/components/SectionHeading";
+import BackButton from "@/components/BackButton";
 import { MEMBERSHIP_FORM_URL } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -13,7 +14,10 @@ export default function RegisterPage() {
   return (
     <section className="section-pad bg-background">
       <div className="container-page">
+        <BackButton href="/" />
+
         <SectionHeading
+          className="mt-8"
           kicker={t.contact.kicker}
           title={t.contact.registerTitle}
           description={t.contact.registerText}

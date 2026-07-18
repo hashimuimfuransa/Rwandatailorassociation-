@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import FadeIn from "@/components/FadeIn";
+import BackButton from "@/components/BackButton";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { NewsItem } from "@/types";
 
@@ -16,13 +17,7 @@ export default function NewsArticle({ item }: { item: NewsItem }) {
     <article className="section-pad bg-background">
       <div className="container-page max-w-3xl">
         <FadeIn>
-          <Link
-            href="/news"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            {t.news.viewAll}
-          </Link>
+          <BackButton href="/news" />
         </FadeIn>
 
         <FadeIn
