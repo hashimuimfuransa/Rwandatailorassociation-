@@ -171,6 +171,33 @@ export const WHY_JOIN: Record<"en" | "rw", string[]> = {
 
 export const NEWS: NewsItem[] = [
   {
+    slug: "isaac-manufacturing-center-gisagara",
+    image: "/images/isaac.png",
+    category: { en: "MEMBER SPOTLIGHT", rw: "UMUNYAMURYANGO" },
+    date: { en: "July 15, 2024", rw: "15 Nyakanga 2024" },
+    title: {
+      en: "Member Spotlight: Isaac and Isaac Manufacturing Center in Gisagara",
+      rw: "Umunyamuryango Wagaragaye: Isaac na Isaac Manufacturing Center i Gisagara",
+    },
+    excerpt: {
+      en: "RTA member Isaac has grown Isaac Manufacturing Center into one of Gisagara District's leading garment workshops.",
+      rw: "Umunyamuryango wa RTA, Isaac, yateje imbere Isaac Manufacturing Center kugeza kuba kimwe mu bubiko bw'imyenda bukomeye mu Karere ka Gisagara.",
+    },
+    body: {
+      en: [
+        "Isaac is a proud RTA member and the founder of Isaac Manufacturing Center, a garment production workshop based in Gisagara District, Southern Province, producing tailored clothing and uniforms for clients across the region.",
+        "Since joining RTA, Isaac has drawn on the association's training programs and business support services to modernise his workshop's equipment, formalise his pricing and operations, and take on larger production orders.",
+        "Today, Isaac Manufacturing Center employs a growing team of local tailors and is a source of pride in Gisagara, showing what steady investment in skills and quality can build for a tailoring business in Rwanda.",
+      ],
+      rw: [
+        "Isaac ni umunyamuryango w'ishema wa RTA kandi ni umushinze wa Isaac Manufacturing Center, ubukorikori bw'imyenda buherereye mu Karere ka Gisagara, Intara y'Amajyepfo, bukora imyenda n'imyambaro y'amashuri n'ibigo ku bakiriya bo muri iyo karere.",
+        "Kuva yinjira muri RTA, Isaac yakoresheje amahugurwa n'ubufasha mu bucuruzi bitangwa n'ishyirahamwe kugira ngo avugurure ibikoresho by'ubukorikori bwe, ashyireho uburyo bwiza bwo gushyiraho ibiciro n'imikorere, akaba yatangiye kwakira amabwiriza manini y'imyenda.",
+        "Muri iki gihe, Isaac Manufacturing Center ifite itsinda rikura ry'abadozi bo mu karere, kandi iri shusho ry'ishema muri Gisagara, igaragaza ibyo gushora mu bumenyi n'ubuziranenge byazana ku bucuruzi bw'ubudozi mu Rwanda.",
+      ],
+    },
+  },
+  {
+    slug: "rta-tvet-schools-partnership",
     image: "/images/news-tvet-graduation.jpg",
     category: { en: "NEWS", rw: "AMAKURU" },
     date: { en: "May 15, 2024", rw: "15 Gicurasi 2024" },
@@ -196,6 +223,7 @@ export const NEWS: NewsItem[] = [
     },
   },
   {
+    slug: "national-tailors-exhibition-2024",
     image: "/images/gallery-model-outfit.jpg",
     category: { en: "EVENT", rw: "IGIKORWA" },
     date: { en: "June 20, 2024", rw: "20 Kamena 2024" },
@@ -221,6 +249,7 @@ export const NEWS: NewsItem[] = [
     },
   },
   {
+    slug: "modern-tailoring-techniques-training",
     image: "/images/news-training-selfie.jpg",
     category: { en: "TRAINING", rw: "AMAHUGURWA" },
     date: { en: "April 28, 2024", rw: "28 Mata 2024" },
@@ -242,31 +271,6 @@ export const NEWS: NewsItem[] = [
         "Porogaramu nshya y'amahugurwa ya RTA yahaye abanyamuryango ubumenyi bw'uburyo bugezweho bw'ubudozi, harimo guhindura ibipimo mu buryo bwa mudasobwa, kubungabunga imashini z'inganda, n'uburyo bwo kurangiza imyenda mu buziranenge bwo kohereza hanze.",
         "Uretse ubumenyi bw'ikoranabuhanga, iyi porogaramu yarimo n'ibice byigisha gushyiraho ibiciro, gufasha abakiriya, no kubika amakuru y'ibaruramari mu buryo bworoshye kugira ngo abanyamuryango bacunge neza ubucuruzi bwabo.",
         "Abitabiriye barangije iyi porogaramu binjira mu itsinda rikura ry'abarimu bemejwe na RTA bagakomeza kuyobora abanyamuryango bashya mu turere basanzwemo.",
-      ],
-    },
-  },
-  {
-    image: "/images/isaac.png",
-    category: { en: "MEMBER SPOTLIGHT", rw: "UMUNYAMURYANGO" },
-    date: { en: "July 15, 2024", rw: "15 Nyakanga 2024" },
-    title: {
-      en: "Member Spotlight: Isaac and Isaac Manufacturing Center in Gisagara",
-      rw: "Umunyamuryango Wagaragaye: Isaac na Isaac Manufacturing Center i Gisagara",
-    },
-    excerpt: {
-      en: "RTA member Isaac has grown Isaac Manufacturing Center into one of Gisagara District's leading garment workshops.",
-      rw: "Umunyamuryango wa RTA, Isaac, yateje imbere Isaac Manufacturing Center kugeza kuba kimwe mu bubiko bw'imyenda bukomeye mu Karere ka Gisagara.",
-    },
-    body: {
-      en: [
-        "Isaac is a proud RTA member and the founder of Isaac Manufacturing Center, a garment production workshop based in Gisagara District, Southern Province, producing tailored clothing and uniforms for clients across the region.",
-        "Since joining RTA, Isaac has drawn on the association's training programs and business support services to modernise his workshop's equipment, formalise his pricing and operations, and take on larger production orders.",
-        "Today, Isaac Manufacturing Center employs a growing team of local tailors and is a source of pride in Gisagara, showing what steady investment in skills and quality can build for a tailoring business in Rwanda.",
-      ],
-      rw: [
-        "Isaac ni umunyamuryango w'ishema wa RTA kandi ni umushinze wa Isaac Manufacturing Center, ubukorikori bw'imyenda buherereye mu Karere ka Gisagara, Intara y'Amajyepfo, bukora imyenda n'imyambaro y'amashuri n'ibigo ku bakiriya bo muri iyo karere.",
-        "Kuva yinjira muri RTA, Isaac yakoresheje amahugurwa n'ubufasha mu bucuruzi bitangwa n'ishyirahamwe kugira ngo avugurure ibikoresho by'ubukorikori bwe, ashyireho uburyo bwiza bwo gushyiraho ibiciro n'imikorere, akaba yatangiye kwakira amabwiriza manini y'imyenda.",
-        "Muri iki gihe, Isaac Manufacturing Center ifite itsinda rikura ry'abadozi bo mu karere, kandi iri shusho ry'ishema muri Gisagara, igaragaza ibyo gushora mu bumenyi n'ubuziranenge byazana ku bucuruzi bw'ubudozi mu Rwanda.",
       ],
     },
   },

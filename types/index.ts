@@ -31,6 +31,7 @@ export interface PartnerLogo {
 }
 
 export interface NewsItem {
+  slug: string;
   image: string;
   category: Localized;
   date: Localized;
