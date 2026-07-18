@@ -6,7 +6,7 @@ import Membership from "@/components/Membership";
 import NewsEvents from "@/components/NewsEvents";
 import Gallery from "@/components/Gallery";
 import Testimonials from "@/components/Testimonials";
-import CTA from "@/components/CTA";
+import ContactUs from "@/components/ContactUs";
 
 export default function Home() {
   return (
@@ -19,7 +19,7 @@ export default function Home() {
       <NewsEvents />
       <Gallery />
       <Testimonials />
-      <CTA />
+      <ContactUs />
     </>
   );
 }

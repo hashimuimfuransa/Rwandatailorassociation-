@@ -1,6 +1,8 @@
 import {
   Users,
   MapPin,
+  Phone,
+  Mail,
   Briefcase,
   GraduationCap,
   Handshake,
@@ -9,6 +11,12 @@ import {
   Megaphone,
   Globe2,
 } from "lucide-react";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  XIcon,
+  LinkedinIcon,
+} from "@/components/icons/SocialIcons";
 import type {
   NavLink,
   StatItem,
@@ -19,7 +27,42 @@ import type {
   GalleryItem,
   Testimonial,
   FooterLinkGroup,
+  ContactDetail,
+  SocialLink,
 } from "@/types";
+
+// Replace with the live URL printed by scripts/google-form/create-membership-form.gs
+// after you run it (Logger.log "Form URL"), e.g. https://forms.gle/xxxxxxxx
+export const MEMBERSHIP_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSc_mlPlX9p_-fY4sdnphv8r3kOPRQZWEKgJeAmj1ZUBFObBEQ/viewform";
+
+export const CONTACT_DETAILS: ContactDetail[] = [
+  {
+    icon: MapPin,
+    label: { en: "Our Office", rw: "Ibiro Byacu" },
+    value: "Kicukiro District, Gatenga Sector",
+    href: "https://www.google.com/maps?q=Gatenga,+Kicukiro+District,+Kigali,+Rwanda",
+  },
+  {
+    icon: Phone,
+    label: { en: "Call Us", rw: "Duhamagare" },
+    value: "0788562837",
+    href: "tel:+250788562837",
+  },
+  {
+    icon: Mail,
+    label: { en: "Email Us", rw: "Dutumire Imeri" },
+    value: "info.rta24@gmail.com",
+    href: "mailto:info.rta24@gmail.com",
+  },
+];
+
+export const SOCIAL_LINKS: SocialLink[] = [
+  { icon: FacebookIcon, label: "Facebook", href: "#" },
+  { icon: InstagramIcon, label: "Instagram", href: "#" },
+  { icon: XIcon, label: "Twitter / X", href: "#" },
+  { icon: LinkedinIcon, label: "LinkedIn", href: "#" },
+];
 
 export const NAV_LINKS: NavLink[] = [
   { label: { en: "Home", rw: "Ahabanza" }, href: "#home" },

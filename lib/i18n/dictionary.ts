@@ -86,6 +86,20 @@ export interface Dictionary {
     privacyPolicy: string;
     termsOfUse: string;
   };
+  contact: {
+    kicker: string;
+    title: string;
+    description: string;
+    addressLabel: string;
+    phoneLabel: string;
+    emailLabel: string;
+    followUs: string;
+    mapTitle: string;
+    registerTitle: string;
+    registerText: string;
+    registerButton: string;
+    registerNewTab: string;
+  };
 }
 
 const dictionary: Record<Locale, Dictionary> = {
@@ -192,6 +206,22 @@ const dictionary: Record<Locale, Dictionary> = {
       privacyPolicy: "Privacy Policy",
       termsOfUse: "Terms of Use",
     },
+    contact: {
+      kicker: "Contact Us",
+      title: "Get in Touch",
+      description:
+        "Have a question or ready to join? Reach out to the RTA team using the details below, or register your membership online in just a few minutes.",
+      addressLabel: "Our Office",
+      phoneLabel: "Call Us",
+      emailLabel: "Email Us",
+      followUs: "Follow Us",
+      mapTitle: "RTA office location map",
+      registerTitle: "Ready to Become a Member?",
+      registerText:
+        "Fill out our official online membership registration form — available in English and Kinyarwanda and takes about 5 minutes.",
+      registerButton: "Register Online Now",
+      registerNewTab: "Open full form in a new tab",
+    },
   },
   rw: {
     meta: {
@@ -295,6 +325,22 @@ const dictionary: Record<Locale, Dictionary> = {
       copyright: "© 2024 Ishyirahamwe ry'Abadozi b'u Rwanda. Uburenganzira Bwose Burabitswe.",
       privacyPolicy: "Politiki y'Ibanga",
       termsOfUse: "Amabwiriza y'Ikoreshwa",
+    },
+    contact: {
+      kicker: "Twandikire",
+      title: "Tuvugishe",
+      description:
+        "Ufite ikibazo cyangwa witeguye kwinjira muri RTA? Vugana n'itsinda ryacu ukoresheje amakuru akurikira, cyangwa wiyandikishe ubunyamuryango kuri interineti mu minota mike.",
+      addressLabel: "Ibiro Byacu",
+      phoneLabel: "Duhamagare",
+      emailLabel: "Dutumire Imeri",
+      followUs: "Dukurikire",
+      mapTitle: "Ikarita y'aho ibiro bya RTA biherereye",
+      registerTitle: "Witeguye Kuba Umunyamuryango?",
+      registerText:
+        "Uzuza ifishi yacu yemewe yo kwiyandikisha kuri interineti — iraboneka mu Cyongereza no mu Kinyarwanda kandi ibaza iminota itanu gusa.",
+      registerButton: "Iyandikishe Kuri Interineti",
+      registerNewTab: "Fungura ifishi yose mu tabu rishya",
     },
   },
 };

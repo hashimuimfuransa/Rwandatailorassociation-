@@ -95,7 +95,7 @@ export default function Navbar() {
             <Link href="#login">{t.navbar.login}</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="#membership">{t.navbar.becomeMember}</Link>
+            <Link href="/register">{t.navbar.becomeMember}</Link>
           </Button>
         </div>
 
@@ -155,7 +155,7 @@ export default function Navbar() {
                 </Link>
               </Button>
               <Button asChild className="mt-3 w-full">
-                <Link href="#membership" onClick={() => setOpen(false)}>
+                <Link href="/register" onClick={() => setOpen(false)}>
                   {t.navbar.becomeMember}
                 </Link>
               </Button>

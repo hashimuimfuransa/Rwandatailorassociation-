@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
 export type Locale = "en" | "rw";
 
@@ -60,4 +61,17 @@ export interface Testimonial {
 export interface FooterLinkGroup {
   title: Localized;
   links: NavLink[];
+}
+
+export interface ContactDetail {
+  icon: LucideIcon;
+  label: Localized;
+  value: string;
+  href: string;
+}
+
+export interface SocialLink {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  label: string;
+  href: string;
 }

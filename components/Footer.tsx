@@ -1,36 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone, MapPin } from "lucide-react";
 import Logo from "@/components/Logo";
 import NewsletterForm from "@/components/NewsletterForm";
-import {
-  FacebookIcon,
-  InstagramIcon,
-  XIcon,
-  LinkedinIcon,
-} from "@/components/icons/SocialIcons";
-import { FOOTER_LINKS } from "@/lib/data";
+import { FOOTER_LINKS, CONTACT_DETAILS, SOCIAL_LINKS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageProvider";
-
-const SOCIALS = [
-  { icon: FacebookIcon, label: "Facebook", href: "#" },
-  { icon: InstagramIcon, label: "Instagram", href: "#" },
-  { icon: XIcon, label: "Twitter / X", href: "#" },
-  { icon: LinkedinIcon, label: "LinkedIn", href: "#" },
-];
-
-const CONTACT = [
-  { icon: MapPin, text: "Kicukiro District, Gatenga Sector" },
-  { icon: Phone, text: "0788562837" },
-  { icon: Mail, text: "info.rta24@gmail.com" },
-];
 
 export default function Footer() {
   const { locale, t } = useLanguage();
 
   return (
-    <footer id="contact" className="border-t border-border bg-footer text-white">
+    <footer className="border-t border-border bg-footer text-white">
       <div className="container-page grid grid-cols-2 gap-10 py-16 sm:grid-cols-3 lg:grid-cols-6">
         <div className="col-span-2 sm:col-span-1">
           <Logo variant="light" />
@@ -38,7 +18,7 @@ export default function Footer() {
             {t.footer.about}
           </p>
           <div className="mt-6 flex items-center gap-3">
-            {SOCIALS.map((social) => (
+            {SOCIAL_LINKS.map((social) => (
               <Link
                 key={social.label}
                 href={social.href}
@@ -76,12 +56,22 @@ export default function Footer() {
             {t.footer.contactUs}
           </h3>
           <ul className="mt-4 space-y-2.5 text-[13px] text-white/65">
-            {CONTACT.map((item) => (
-              <li key={item.text} className="flex items-start gap-2">
-                <item.icon className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                {item.text}
-              </li>
-            ))}
+            {CONTACT_DETAILS.map((item) => {
+              const external = item.href.startsWith("http");
+              return (
+                <li key={item.value} className="flex items-start gap-2">
+                  <item.icon className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  <Link
+                    href={item.href}
+                    target={external ? "_blank" : undefined}
+                    rel={external ? "noopener noreferrer" : undefined}
+                    className="transition-colors hover:text-primary"
+                  >
+                    {item.value}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
