@@ -127,7 +127,7 @@ const dictionary: Record<Locale, Dictionary> = {
       titleLine2: "Building Rwanda's",
       titleLine3: "Fashion Industry.",
       subtitle:
-        "The official association representing professional tailors across Rwanda. Together we promote quality, innovation, business growth and a stronger tailoring industry.",
+        "The official association representing tailors across Rwanda. Together we promote quality, innovation, business growth and a stronger tailoring industry.",
       ctaMember: "Become a Member",
       ctaServices: "Explore Our Services",
       imageAlt:
@@ -145,7 +145,7 @@ const dictionary: Record<Locale, Dictionary> = {
       kicker: "About Us",
       title: "About Rwanda Tailors Association",
       paragraph:
-        "Rwanda Tailors Association (RTA) is the umbrella body of professional tailors in Rwanda. We work to promote high standards, innovation and growth of the tailoring industry while representing the interests of our members.",
+        "Rwanda Tailors Association (RTA) is the umbrella body of tailors in Rwanda. We work to promote high standards, innovation and growth of the tailoring industry while representing the interests of our members.",
       readMore: "Read More About Us",
       imageAlt: "A tailor stitching fabric on a JUKI industrial sewing machine",
       pillars: [
@@ -195,12 +195,12 @@ const dictionary: Record<Locale, Dictionary> = {
     },
     cta: {
       title: "Join Rwanda's Largest Tailoring Community",
-      text: "Be part of a strong network of professional tailors building the future of Rwanda's fashion industry.",
+      text: "Be part of a strong network of tailors building the future of Rwanda's fashion industry.",
       button: "Become a Member Today",
     },
     footer: {
       about:
-        "The official association representing professional tailors across Rwanda. Together we build a stronger tailoring industry.",
+        "The official association representing tailors across Rwanda. Together we build a stronger tailoring industry.",
       quickLinks: "Quick Links",
       contactUs: "Contact Us",
       newsletter: "Newsletter",

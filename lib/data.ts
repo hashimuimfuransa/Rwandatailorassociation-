@@ -112,7 +112,7 @@ export const SERVICES: ServiceItem[] = [
     icon: GraduationCap,
     title: { en: "Capacity Building", rw: "Kongera Ubushobozi" },
     description: {
-      en: "Training, workshops and skills development to build professional tailors.",
+      en: "Training, workshops and skills development to build skilled tailors.",
       rw: "Amahugurwa, inama mpuzabikorwa n'iterambere ry'ubumenyi kugira ngo habeho abadozi b'inzobere.",
     },
   },
@@ -211,7 +211,7 @@ export const NEWS: NewsItem[] = [
     },
     body: {
       en: [
-        "Rwanda Tailors Association has signed a partnership with TVET schools across the country to promote tailoring as a certified, skills-based career path. The program embeds RTA's professional standards directly into the TVET curriculum.",
+        "Rwanda Tailors Association has signed a partnership with TVET schools across the country to promote tailoring as a certified, skills-based career path. The program embeds RTA's industry standards directly into the TVET curriculum.",
         "Graduates of the program receive a nationally recognised certificate and are automatically eligible for RTA membership, giving them immediate access to the association's network, business support services, and market linkages.",
         "The first cohort of graduates was celebrated at a ceremony attended by RTA leadership, TVET school administrators, and representatives from MINICOM and RDB, marking a major step toward formalising tailoring as a respected trade in Rwanda.",
       ],
@@ -401,7 +401,7 @@ export const GALLERY: GalleryItem[] = [
 export const TESTIMONIALS: Testimonial[] = [
   {
     name: "Nshimiyimana Daniel",
-    role: { en: "President, RTA", rw: "Perezida, RTA" },
+    role: { en: "Chairman, RTA", rw: "Umuyobozi w'Inama y'Ubutegetsi, RTA" },
     image: "/images/president-daniel.jpg",
     quote: {
       en: "RTA brings tailors together and gives us a strong, united voice to grow the industry across Rwanda.",
@@ -410,7 +410,7 @@ export const TESTIMONIALS: Testimonial[] = [
   },
   {
     name: "Munezero Seleman Clementine",
-    role: { en: "Vice President, RTA", rw: "Visi Perezida, RTA" },
+    role: { en: "Vice Chairman, RTA", rw: "Visi Perezida w'Inama y'Ubutegetsi, RTA" },
     image: "/images/vice-president-clementine.jpg",
     quote: {
       en: "RTA has helped my business grow through training, exposure and networking. I am proud to be a member.",

@@ -22,7 +22,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Rwanda Tailors Association | Empowering Tailors, Building Rwanda",
   description:
-    "The official association representing professional tailors across Rwanda. Together we promote quality, innovation, business growth and a stronger tailoring industry.",
+    "The official association representing tailors across Rwanda. Together we promote quality, innovation, business growth and a stronger tailoring industry.",
   keywords: [
     "Rwanda Tailors Association",
     "RTA",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Rwanda Tailors Association",
     description:
-      "Empowering Tailors. Building Rwanda. The official association representing professional tailors across Rwanda.",
+      "Empowering Tailors. Building Rwanda. The official association representing tailors across Rwanda.",
     locale: "en_RW",
     type: "website",
   },
