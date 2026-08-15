@@ -1,0 +1,204 @@
+   ▲ Next.js 15.5.20
+   - Local:        http://localhost:3300
+   - Network:      http://192.168.56.1:3300
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 8.4s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 3.1s (171 modules)
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 8.7s (484 modules)
+[09:30:10] [32mINFO[39m: [36msession created[39m
+    [35mcomponent[39m: "auth"
+    [35muserId[39m: "cmsrhgk0v001yfkvanisy09c6"
+    [35msessionId[39m: "cmssqxow00000jkvaw4yijzt6"
+ POST /api/auth/login 200 in 15190ms
+ ○ Compiling /admin/payments/import ...
+ ✓ Compiled /admin/payments/import in 12.9s (1178 modules)
+ GET /admin/payments/import 200 in 20598ms
+ ○ Compiling /api/admin/statements/parse ...
+ ✓ Compiled /api/admin/statements/parse in 5s (1232 modules)
+ POST /api/admin/statements/parse 400 in 8484ms
+[09:30:43] [32mINFO[39m: [36msession created[39m
+    [35mcomponent[39m: "auth"
+    [35muserId[39m: "cmsrhgkui001zfkva6zni3o8l"
+    [35msessionId[39m: "cmssqyed30003jkvaftnmreor"
+ POST /api/auth/login 200 in 2360ms
+ POST /api/admin/statements/parse 403 in 1372ms
+ ✓ Compiled in 3.7s (1232 modules)
+[Error: ENOENT: no such file or directory, stat 'D:\RTA\.next\cache\webpack\client-development\1.pack.gz'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\RTA\\.next\\cache\\webpack\\client-development\\1.pack.gz'
+}
+ ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat 'D:\RTA\.next\cache\webpack\client-development\1.pack.gz'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\RTA\\.next\\cache\\webpack\\client-development\\1.pack.gz'
+}
+ ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat 'D:\RTA\.next\cache\webpack\client-development\1.pack.gz'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\RTA\\.next\\cache\\webpack\\client-development\\1.pack.gz'
+}
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat 'D:\RTA\.next\cache\webpack\client-development\1.pack.gz'
+ ✓ Compiled in 839ms (405 modules)
+ ✓ Compiled in 677ms (405 modules)
+ ✓ Compiled in 515ms (405 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'D:\RTA\.next\cache\webpack\client-development\0.pack.gz_' -> 'D:\RTA\.next\cache\webpack\client-development\0.pack.gz'
+ ✓ Compiled in 1049ms (405 modules)
+ ✓ Compiled in 847ms (405 modules)
+ ✓ Compiled in 1581ms (576 modules)
+ ✓ Compiled in 501ms (405 modules)
+ ✓ Compiled in 319ms (405 modules)
+ ✓ Compiled in 1250ms (405 modules)
+ ✓ Compiled in 816ms (405 modules)
+ ✓ Compiled in 766ms (405 modules)
+ ✓ Compiled in 899ms (405 modules)
+ ✓ Compiled in 841ms (405 modules)
+ ✓ Compiled in 705ms (405 modules)
+ ✓ Compiled in 663ms (405 modules)
+ ✓ Compiled in 756ms (405 modules)
+ ✓ Compiled in 523ms (405 modules)
+ ✓ Compiled in 776ms (405 modules)
+ ✓ Compiled in 492ms (405 modules)
+ ✓ Compiled in 661ms (405 modules)
+ ✓ Compiled in 1373ms (576 modules)
+ ✓ Compiled in 1173ms (562 modules)
+ ✓ Compiled in 352ms (405 modules)
+ ✓ Compiled in 638ms (405 modules)
+ ✓ Compiled in 323ms (405 modules)
+ ✓ Compiled in 296ms (405 modules)
+ ✓ Compiled in 485ms (405 modules)
+ ✓ Compiled in 830ms (576 modules)
+ ✓ Compiled in 410ms (405 modules)
+ ✓ Compiled in 563ms (405 modules)
+ ✓ Compiled in 513ms (405 modules)
+ ✓ Compiled in 394ms (405 modules)
+ ✓ Compiled in 358ms (405 modules)
+ ✓ Compiled in 341ms (405 modules)
+ ✓ Compiled in 372ms (405 modules)
+ ✓ Compiled in 435ms (405 modules)
+ ✓ Compiled in 743ms (576 modules)
+ ✓ Compiled in 355ms (405 modules)
+ ✓ Compiled in 603ms (405 modules)
+ ✓ Compiled in 436ms (405 modules)
+ ✓ Compiled in 503ms (405 modules)
+ ✓ Compiled in 321ms (405 modules)
+ ✓ Compiled in 349ms (405 modules)
+ ✓ Compiled in 614ms (405 modules)
+ ✓ Compiled in 455ms (405 modules)
+ ✓ Compiled in 342ms (405 modules)
+ ✓ Compiled in 1349ms (576 modules)
+ ✓ Compiled in 2.7s (576 modules)
+ ✓ Compiled in 2.9s (576 modules)
+ ✓ Compiled in 1559ms (576 modules)
+ ✓ Compiled in 1146ms (576 modules)
+ ✓ Compiled in 499ms (405 modules)
+ ✓ Compiled in 630ms (405 modules)
+ ✓ Compiled in 599ms (405 modules)
+ ✓ Compiled in 519ms (405 modules)
+ ✓ Compiled in 511ms (405 modules)
+ ✓ Compiled in 603ms (405 modules)
+ ✓ Compiled in 682ms (405 modules)
+ ✓ Compiled in 555ms (405 modules)
+ ✓ Compiled in 707ms (562 modules)
+ ✓ Compiled in 596ms (562 modules)
+ ✓ Compiled in 1870ms (562 modules)
+ ✓ Compiled in 679ms (405 modules)
+ ✓ Compiled in 542ms (405 modules)
+ ✓ Compiled in 420ms (405 modules)
+ ✓ Compiled in 414ms (405 modules)
+ ✓ Compiled in 1143ms (576 modules)
+ ✓ Compiled in 717ms (405 modules)
+ ✓ Compiled in 795ms (405 modules)
+ ✓ Compiled in 1051ms (405 modules)
+ ✓ Compiled in 709ms (405 modules)
+ ✓ Compiled in 1132ms (562 modules)
+ ✓ Compiled in 384ms (405 modules)
+ ✓ Compiled in 933ms (576 modules)
+ ✓ Compiled in 730ms (562 modules)
+ ✓ Compiled in 1269ms (576 modules)
+ ✓ Compiled in 918ms (576 modules)
+ ✓ Compiled in 413ms (405 modules)
+ ✓ Compiled in 931ms (576 modules)
+ ✓ Compiled in 1466ms (576 modules)
+ ✓ Compiled in 896ms (405 modules)
+ ✓ Compiled in 691ms (405 modules)
+ ✓ Compiled in 944ms (405 modules)
+ ✓ Compiled in 1611ms (405 modules)
+ ✓ Compiled in 773ms (405 modules)
+ ✓ Compiled in 833ms (405 modules)
+ ✓ Compiled in 676ms (405 modules)
+ ✓ Compiled in 475ms (405 modules)
+ ✓ Compiled in 564ms (405 modules)
+ ✓ Compiled in 636ms (405 modules)
+ ✓ Compiled in 926ms (405 modules)
+ ✓ Compiled in 1032ms (405 modules)
+ ✓ Compiled in 781ms (405 modules)
+ ✓ Compiled in 659ms (405 modules)
+ ✓ Compiled in 626ms (405 modules)
+ ✓ Compiled in 847ms (405 modules)
+ ✓ Compiled in 1041ms (405 modules)
+ ✓ Compiled in 931ms (405 modules)
+ ✓ Compiled in 881ms (405 modules)
+ ✓ Compiled in 750ms (405 modules)
+ ✓ Compiled in 844ms (405 modules)
+ ✓ Compiled in 799ms (405 modules)
+ ✓ Compiled in 917ms (405 modules)
+ ✓ Compiled in 780ms (405 modules)
+ ✓ Compiled in 973ms (405 modules)
+ ✓ Compiled in 539ms (405 modules)
+ ✓ Compiled in 735ms (405 modules)
+ ✓ Compiled in 551ms (405 modules)
+ ✓ Compiled in 685ms (405 modules)
+ ✓ Compiled in 545ms (405 modules)
+ ✓ Compiled in 698ms (405 modules)
+ ✓ Compiled in 722ms (405 modules)
+ ✓ Compiled in 666ms (405 modules)
+ ✓ Compiled in 816ms (405 modules)
+ ✓ Compiled in 735ms (405 modules)
+ ✓ Compiled in 671ms (405 modules)
+ ✓ Compiled in 561ms (405 modules)
+ ✓ Compiled in 326ms (405 modules)
+ ✓ Compiled in 373ms (405 modules)
+ ✓ Compiled in 371ms (405 modules)
+ ✓ Compiled in 485ms (405 modules)
+ ✓ Compiled in 437ms (405 modules)
+ ✓ Compiled in 472ms (405 modules)
+ ✓ Compiled in 399ms (405 modules)
+ ✓ Compiled in 409ms (405 modules)
+ ✓ Compiled in 410ms (405 modules)
+ ✓ Compiled in 460ms (405 modules)
+ ✓ Compiled in 377ms (405 modules)
+ ✓ Compiled in 376ms (405 modules)
+ ✓ Compiled in 398ms (405 modules)
+ ✓ Compiled in 380ms (405 modules)
+ ✓ Compiled in 433ms (405 modules)
+ ✓ Compiled in 458ms (405 modules)
+ ✓ Compiled in 341ms (405 modules)
+ ✓ Compiled in 399ms (405 modules)
+ ✓ Compiled in 396ms (405 modules)
+ ✓ Compiled in 435ms (405 modules)
+ ✓ Compiled in 575ms (405 modules)
+ ✓ Compiled in 442ms (405 modules)
+ ✓ Compiled in 349ms (405 modules)
+ ✓ Compiled in 514ms (405 modules)
+ ✓ Compiled in 498ms (405 modules)
+ ✓ Compiled in 407ms (405 modules)
+ ✓ Compiled in 424ms (405 modules)
+ ✓ Compiled in 437ms (405 modules)
+ ✓ Compiled in 387ms (405 modules)
+ ✓ Compiled in 423ms (405 modules)
+ ✓ Compiled in 478ms (405 modules)
+ ✓ Compiled in 455ms (405 modules)
+ ✓ Compiled in 459ms (405 modules)
+ ✓ Compiled in 559ms (405 modules)
+ ✓ Compiled in 592ms (405 modules)
+ ✓ Compiled in 448ms (405 modules)
+ ✓ Compiled in 466ms (405 modules)
+ ✓ Compiled in 750ms (405 modules)

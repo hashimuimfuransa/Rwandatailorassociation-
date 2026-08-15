@@ -1,0 +1,145 @@
+# =============================================================================
+# Render blueprint — RTA savings platform.
+#
+# Two services from ONE Docker image:
+#
+#   rta-web     the Next.js application (frontend and API routes together)
+#   rta-worker  the reconciliation scheduler
+#
+# THE WORKER IS NOT OPTIONAL. It is what credits members' payments, flags
+# overdue loans, sends repayment reminders and verifies ledger integrity. If
+# only the web service is deployed, the application looks completely healthy
+# while payments quietly stop being credited — there is no error anywhere,
+# members simply never see their money. Deploy both.
+#
+# EXACTLY ONE WORKER INSTANCE. The scheduler must not be scaled horizontally:
+# reconciliation is idempotent and would survive it, but repayment reminders are
+# not, and members would receive every SMS twice.
+#
+# Apply with: Render dashboard → Blueprints → New Blueprint Instance.
+# =============================================================================
+
+services:
+  # --- web -------------------------------------------------------------------
+  - type: web
+    name: rta-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /login
+    # Applies pending migrations once per deploy, before any instance starts
+    # serving. Running them from the app's startup instead would race across
+    # instances during a rolling deploy.
+    preDeployCommand: npx prisma migrate deploy
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # set in the dashboard; never committed
+      - key: SESSION_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false # e.g. https://rta-web.onrender.com
+
+      # Statement extraction. `python` rather than `auto` so a broken image
+      # fails visibly instead of silently downgrading to the parser that can
+      # misread an amount.
+      - key: STATEMENT_EXTRACTOR
+        value: python
+      - key: PYTHON_BIN
+        value: /opt/venv/bin/python
+
+      # Payment provider. Sandbox fabricates transactions and must never back
+      # real balances — lib/env.ts refuses sandbox in production.
+      - key: JENGA_MODE
+        sync: false
+      - key: JENGA_API_KEY
+        sync: false
+      - key: JENGA_MERCHANT_CODE
+        sync: false
+      - key: JENGA_CONSUMER_SECRET
+        sync: false
+      - key: JENGA_ACCOUNT_NUMBER
+        sync: false
+      - key: JENGA_PRIVATE_KEY_BASE64
+        sync: false
+      - key: JENGA_WEBHOOK_SECRET
+        sync: false
+
+      # Notifications
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMS_PROVIDER
+        sync: false
+      - key: AFRICASTALKING_USERNAME
+        sync: false
+      - key: AFRICASTALKING_API_KEY
+        sync: false
+
+      # The web service must never run the scheduler: it can be scaled to
+      # several instances, which would multiply every job.
+      - key: WORKER_ENABLED
+        value: "false"
+
+  # --- background worker -----------------------------------------------------
+  - type: worker
+    name: rta-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    dockerCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Same database as the web service.
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false
+
+      - key: STATEMENT_EXTRACTOR
+        value: python
+      - key: PYTHON_BIN
+        value: /opt/venv/bin/python
+
+      - key: JENGA_MODE
+        sync: false
+      - key: JENGA_API_KEY
+        sync: false
+      - key: JENGA_MERCHANT_CODE
+        sync: false
+      - key: JENGA_CONSUMER_SECRET
+        sync: false
+      - key: JENGA_ACCOUNT_NUMBER
+        sync: false
+      - key: JENGA_PRIVATE_KEY_BASE64
+        sync: false
+      - key: JENGA_WEBHOOK_SECRET
+        sync: false
+
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMS_PROVIDER
+        sync: false
+      - key: AFRICASTALKING_USERNAME
+        sync: false
+      - key: AFRICASTALKING_API_KEY
+        sync: false
+
+      # This is the one process that runs the scheduler.
+      - key: WORKER_ENABLED
+        value: "true"

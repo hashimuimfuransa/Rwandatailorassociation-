@@ -1,0 +1,13 @@
+-- Adds PAYER_NAME to MatchStrategy.
+--
+-- Payments frequently arrive with no member payment reference at all — the
+-- payer simply did not quote one, which is especially common on bank statement
+-- imports and cash deposits. The matcher can now suggest a member from the
+-- sender's name so the payment reaches the review queue with a named candidate
+-- attached rather than as an anonymous unmatched row.
+--
+-- This strategy is scored BELOW PAYMENT_AUTO_MATCH_MIN_CONFIDENCE in
+-- lib/services/payment-matching.ts, so it can never credit an account on its
+-- own; an administrator confirms it. Placed after PHONE_NUMBER to keep the
+-- enum ordered weakest-evidence-last among the automatic strategies.
+ALTER TYPE "MatchStrategy" ADD VALUE 'PAYER_NAME' AFTER 'PHONE_NUMBER';

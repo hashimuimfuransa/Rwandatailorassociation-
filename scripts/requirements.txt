@@ -1,0 +1,10 @@
+# Python dependencies for bank statement PDF extraction.
+#
+# Install with:   pip install -r scripts/requirements.txt
+#
+# Only used by scripts/pdf_extract.py, which the statement import calls as a
+# subprocess. If Python or this package is unavailable the import falls back to
+# the JavaScript extractor automatically — see lib/services/pdf-extract.ts —
+# so a deployment without Python still works, just less accurately on
+# tightly-set table layouts.
+pdfplumber==0.11.9

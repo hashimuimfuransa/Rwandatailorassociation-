@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ChevronDown, Globe, Check } from "lucide-react";
+import { Menu, X, ChevronDown, Globe, Check, LogIn } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -91,6 +91,15 @@ export default function Navbar() {
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
+          {/* Sign in sits beside Become Member rather than inside a menu:
+              existing members arrive here to reach their savings, and hunting
+              for the way in is the first thing they should not have to do. */}
+          <Button asChild size="sm" variant="outline">
+            <Link href="/login">
+              <LogIn className="size-3.5" aria-hidden="true" />
+              {t.navbar.signIn}
+            </Link>
+          </Button>
           <Button asChild size="sm">
             <Link href="/register">{t.navbar.becomeMember}</Link>
           </Button>
@@ -146,7 +155,14 @@ export default function Navbar() {
                 ))}
               </div>
 
-              <Button asChild className="mt-4 w-full">
+              <Button asChild variant="outline" className="mt-4 w-full">
+                <Link href="/login" onClick={() => setOpen(false)}>
+                  <LogIn className="size-4" aria-hidden="true" />
+                  {t.navbar.signIn}
+                </Link>
+              </Button>
+
+              <Button asChild className="mt-2 w-full">
                 <Link href="/register" onClick={() => setOpen(false)}>
                   {t.navbar.becomeMember}
                 </Link>

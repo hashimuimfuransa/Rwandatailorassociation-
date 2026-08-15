@@ -1,0 +1,38 @@
+# Keeps the build context small and, more importantly, keeps secrets out of the
+# image. Anything listed here is never sent to the Docker daemon.
+
+.git
+.github
+node_modules
+.next
+out
+dist
+
+# Secrets. Configuration comes from the environment at runtime, never baked in.
+.env
+.env.*
+!.env.example
+
+# Local artefacts
+*.log
+dev.log
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+coverage
+.vitest
+
+# Generated Prisma client — rebuilt inside the image so it matches the schema
+# and the target platform's engine, rather than whatever the developer's
+# machine produced.
+lib/generated
+
+# Python bytecode
+__pycache__
+*.pyc
+.venv
+venv
+
+# Tests are not needed to run the service.
+tests

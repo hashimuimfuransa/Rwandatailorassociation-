@@ -8,6 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import dictionary, { type Dictionary } from "@/lib/i18n/dictionary";
+import dashboardDictionary, {
+  type DashboardDictionary,
+} from "@/lib/i18n/dashboard";
 import type { Locale } from "@/types";
 
 const STORAGE_KEY = "rta-locale";
@@ -15,7 +18,10 @@ const STORAGE_KEY = "rta-locale";
 interface LanguageContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  /// Marketing site copy.
   t: Dictionary;
+  /// Dashboard copy. Separate because the two vocabularies barely overlap.
+  d: DashboardDictionary;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -41,7 +47,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t: dictionary[locale] }}>
+    <LanguageContext.Provider
+      value={{
+        locale,
+        setLocale,
+        t: dictionary[locale],
+        d: dashboardDictionary[locale],
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

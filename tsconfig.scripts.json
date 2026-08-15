@@ -1,0 +1,23 @@
+{
+  // tsconfig for standalone Node scripts and the background worker, run via
+  // tsx. Identical to the app config except that `server-only` is aliased to a
+  // no-op.
+  //
+  // The real `server-only` package throws unless it is loaded inside a React
+  // Server Component, which is exactly the protection we want in the Next
+  // build — it is what guarantees Jenga credentials and database URLs cannot
+  // be pulled into a client bundle. Scripts and the worker are plain Node
+  // processes with no React runtime at all, so the guard has nothing to check
+  // and simply blocks startup. Aliasing it here keeps the app's protection
+  // fully intact while letting the same service modules run outside Next.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "paths": {
+      "@/*": ["./*"],
+      "server-only": ["./scripts/stubs/server-only.ts"]
+    }
+  },
+  "include": ["scripts/**/*.ts", "worker/**/*.ts", "lib/**/*.ts", "prisma/**/*.ts"]
+}

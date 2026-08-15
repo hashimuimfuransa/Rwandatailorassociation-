@@ -1,0 +1,107 @@
+import type { Metadata } from "next";
+import { Link2 } from "lucide-react";
+import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getUnmatchedPayments } from "@/lib/services/admin-dashboard";
+import { prisma } from "@/lib/db/prisma";
+import { PageHeader } from "@/components/dashboard/DashboardShell";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Alert } from "@/components/ui/alert";
+import { UnmatchedPaymentsTable } from "@/components/dashboard/UnmatchedPaymentsTable";
+
+export const metadata: Metadata = { title: "Unmatched payments | RTA" };
+export const dynamic = "force-dynamic";
+
+/**
+ * The unmatched payment queue.
+ *
+ * Every row here is money that reached the association's bank account but
+ * could not be attributed to a member with enough confidence to credit
+ * automatically. Until an administrator resolves it, a member has paid and
+ * their balance does not show it — which is why this screen is one click from
+ * the admin overview and carries a badge in the sidebar.
+ */
+export default async function UnmatchedPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const context = await requirePermission(
+    PERMISSIONS.PAYMENTS_RECONCILE,
+    "/admin/payments/unmatched"
+  );
+
+  const associationId = resolveAssociationScope(context);
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+
+  const [data, members] = await Promise.all([
+    getUnmatchedPayments(associationId, page),
+    // The member list for the manual-match picker. Only ACTIVE members can
+    // receive money, so only they are offered.
+    prisma.member.findMany({
+      where: {
+        ...(associationId ? { associationId } : {}),
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        memberNumber: true,
+        paymentReference: true,
+        user: { select: { firstName: true, lastName: true, phone: true } },
+      },
+      orderBy: { memberNumber: "asc" },
+      take: 500,
+    }),
+  ]);
+
+  const canMatch = context.permissions.has(PERMISSIONS.PAYMENTS_MATCH_MANUAL);
+  // The page already requires PAYMENTS_RECONCILE to open, so anyone here may
+  // clear the queue. Read explicitly rather than assumed, so tightening the
+  // page guard later cannot silently widen who can delete.
+  const canDelete = context.permissions.has(PERMISSIONS.PAYMENTS_RECONCILE);
+
+  return (
+    <div>
+      <PageHeader
+        title="Unmatched payments"
+        description="Money received that could not be attributed to a member automatically."
+      />
+
+      {data.total === 0 ? (
+        <EmptyState
+          icon={Link2}
+          title="Nothing waiting"
+          description="Every payment received has been matched to a member and credited. New unmatched payments will appear here."
+        />
+      ) : (
+        <>
+          <Alert variant="warning" className="mb-5">
+            <strong className="font-semibold">
+              {data.total} payment{data.total === 1 ? "" : "s"} awaiting attention.
+            </strong>{" "}
+            Each one is money in the association&rsquo;s account that a member has
+            not been credited for. Match it only when you are confident whose it
+            is — the decision is recorded against your name.
+          </Alert>
+
+          <UnmatchedPaymentsTable
+            payments={data.payments}
+            members={members.map((m) => ({
+              id: m.id,
+              label: `${m.memberNumber} — ${m.user.firstName} ${m.user.lastName}`,
+              paymentReference: m.paymentReference,
+              phone: m.user.phone,
+            }))}
+            canMatch={canMatch}
+            canDelete={canDelete}
+            page={data.page}
+            pageSize={data.pageSize}
+            total={data.total}
+            totalPages={data.totalPages}
+          />
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,1618 @@
+// ============================================================================
+// RTA — Association Savings & Loan Management System
+// ----------------------------------------------------------------------------
+// Design rules enforced by this schema:
+//
+//  1. MONEY IS NEVER A FLOAT. Every monetary column is Decimal(18,2), which
+//     Postgres stores as exact NUMERIC. Application code must use
+//     Prisma.Decimal for all arithmetic — never JavaScript numbers.
+//
+//  2. THE LEDGER IS APPEND-ONLY. SavingsTransaction and LoanTransaction rows
+//     are never updated or deleted once posted. Corrections happen by posting
+//     a REVERSAL/ADJUSTMENT row that points back at the original.
+//
+//  3. BALANCES ARE DERIVED, NOT TRUSTED. SavingsAccount.balance is a cache
+//     that may only be written inside the same database transaction that
+//     appends the ledger row, under a row lock. Every ledger row records
+//     balanceBefore/balanceAfter and a per-account monotonic `sequence`, so
+//     the cache can always be rebuilt and verified against history.
+//
+//  4. NO PAYMENT IS PROCESSED TWICE. Payment carries unique constraints on
+//     the provider's own identifiers, so a replayed webhook or an overlapping
+//     reconciliation poll cannot credit a member a second time.
+//
+//  5. TENANCY IS STRUCTURAL. Every tenant-scoped model carries associationId
+//     and indexes it first, so queries are always scoped and cross-tenant
+//     reads are impossible when the repository layer applies the filter.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+// Prisma 7 moved the connection URL out of the schema. It now lives in
+// `prisma.config.ts` for CLI/migration commands, and is supplied to the
+// PrismaClient constructor via the pg driver adapter at runtime
+// (see lib/db/prisma.ts). The credential therefore never appears in a file
+// that gets committed.
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  MEMBER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  DISABLED
+}
+
+enum MemberStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  EXITED
+  REJECTED
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum AssociationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+/// Ledger movement classification. Mirrors the transaction types required by
+/// the business spec; FEE and REVERSAL are added because a real ledger cannot
+/// express charges or corrections without them.
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  LOAN_DISBURSEMENT
+  LOAN_REPAYMENT
+  PENALTY
+  INTEREST
+  FEE
+  ADJUSTMENT
+  REVERSAL
+  OTHER
+}
+
+/// CREDIT increases the member's savings balance, DEBIT decreases it.
+/// Stored explicitly rather than inferred from `type` so that adjustments and
+/// reversals can move in either direction without special-casing.
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum PaymentChannel {
+  JENGA_EQUITY
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CASH
+  CHEQUE
+  INTERNAL_TRANSFER
+  OTHER
+}
+
+/// Lifecycle of an inbound provider payment, from raw capture through to a
+/// posted ledger entry. A payment only reaches PROCESSED after it has been
+/// verified as successful with the provider AND matched to a member.
+enum PaymentStatus {
+  RECEIVED
+  PENDING
+  VERIFIED
+  UNMATCHED
+  MATCHED
+  PROCESSED
+  FAILED
+  DUPLICATE
+  REJECTED
+  REVERSED
+}
+
+/// How a payment was attributed to a member, in descending order of trust.
+/// NAME and AMOUNT are deliberately absent — they are never sufficient.
+enum MatchStrategy {
+  MEMBER_PAYMENT_REFERENCE
+  EXTERNAL_CUSTOMER_REFERENCE
+  MOBILE_MONEY_ACCOUNT
+  BANK_ACCOUNT
+  PHONE_NUMBER
+  /// Suggested from the sender's name because no reference was quoted.
+  /// Deliberately scored below the auto-credit threshold — it identifies a
+  /// candidate for an administrator to confirm, and never credits on its own.
+  PAYER_NAME
+  MANUAL_ADMIN
+  NONE
+}
+
+enum ReconciliationOutcome {
+  MATCHED
+  UNMATCHED
+  AMBIGUOUS
+  DUPLICATE
+  VERIFICATION_FAILED
+  PROVIDER_ERROR
+  REJECTED
+  POSTED
+  MANUAL_OVERRIDE
+}
+
+enum WithdrawalStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum LoanApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  MORE_INFORMATION_REQUIRED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LoanStatus {
+  PENDING_DISBURSEMENT
+  DISBURSED
+  ACTIVE
+  COMPLETED
+  OVERDUE
+  DEFAULTED
+  WRITTEN_OFF
+  RESTRUCTURED
+  CANCELLED
+}
+
+enum InstallmentStatus {
+  UPCOMING
+  DUE
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum RepaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  CUSTOM
+}
+
+enum InterestMethod {
+  FLAT
+  REDUCING_BALANCE
+}
+
+/// Whether a configured fee is a fixed amount or a percentage of principal.
+enum ChargeType {
+  FIXED
+  PERCENTAGE
+}
+
+enum LoanTransactionType {
+  DISBURSEMENT
+  REPAYMENT
+  INTEREST_ACCRUAL
+  PENALTY
+  FEE
+  WAIVER
+  WRITE_OFF
+  ADJUSTMENT
+  REVERSAL
+}
+
+enum GuarantorStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  RELEASED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  SKIPPED
+}
+
+enum NotificationSeverity {
+  INFO
+  SUCCESS
+  WARNING
+  CRITICAL
+}
+
+enum DocumentType {
+  NATIONAL_ID
+  PASSPORT
+  PHOTO
+  PROOF_OF_ADDRESS
+  BUSINESS_LICENCE
+  LOAN_SUPPORTING_DOCUMENT
+  LOAN_AGREEMENT
+  GUARANTOR_CONSENT
+  COLLATERAL_DOCUMENT
+  STATEMENT
+  OTHER
+}
+
+enum SettingScope {
+  PLATFORM
+  ASSOCIATION
+}
+
+enum SettingValueType {
+  STRING
+  NUMBER
+  DECIMAL
+  BOOLEAN
+  JSON
+  DATE
+}
+
+enum JobStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+  SKIPPED
+}
+
+enum AuditSeverity {
+  INFO
+  NOTICE
+  WARNING
+  CRITICAL
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+  INVITATION
+  TWO_FACTOR
+}
+
+// ============================================================================
+// TENANCY
+// ============================================================================
+
+/// The tenant root. Every financial record in the system hangs off exactly one
+/// association, and the repository layer scopes all queries by associationId.
+model Association {
+  id                String            @id @default(cuid())
+  /// Short human code used in member payment references, e.g. "RTA".
+  code              String            @unique
+  name              String
+  legalName         String?
+  registrationNo    String?
+  taxId             String?
+  logoUrl           String?
+  status            AssociationStatus @default(PENDING)
+
+  email             String?
+  phone             String?
+  website           String?
+  addressLine1      String?
+  addressLine2      String?
+  city              String?
+  district          String?
+  province          String?
+  country           String            @default("Rwanda")
+
+  /// ISO-4217. Drives formatting and any future multi-currency support.
+  currency          String            @default("RWF")
+  timezone          String            @default("Africa/Kigali")
+  locale            String            @default("en")
+
+  /// Collection account this association receives member payments into.
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankBranchCode    String?
+
+  /// Running counter used to mint sequential member payment references
+  /// without a table scan. Incremented atomically when a member is created.
+  memberRefSequence Int               @default(0)
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  archivedAt        DateTime?
+
+  users             User[]
+  members           Member[]
+  savingsAccounts   SavingsAccount[]
+  transactions      SavingsTransaction[]
+  withdrawals       Withdrawal[]
+  loanProducts      LoanProduct[]
+  loanApplications  LoanApplication[]
+  loans             Loan[]
+  loanTransactions  LoanTransaction[]
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  documents         Document[]
+  settings          SystemSetting[]
+  savingsRule       SavingsRule?
+
+  @@index([status])
+  @@map("associations")
+}
+
+// ============================================================================
+// IDENTITY, AUTH & ACCESS CONTROL
+// ============================================================================
+
+/// An authentication identity. Exactly one User backs each Member, but admins
+/// and super admins exist as Users with no Member record.
+/// SUPER_ADMIN rows carry associationId = null (platform scope).
+model User {
+  id                    String     @id @default(cuid())
+  associationId         String?
+  association           Association? @relation(fields: [associationId], references: [id], onDelete: Restrict)
+
+  email                 String?
+  /// E.164, e.g. +250788123456. Normalised on write.
+  phone                 String?
+  firstName             String
+  lastName              String
+  avatarUrl             String?
+
+  /// Argon2id hash. Never a plaintext or reversible value.
+  passwordHash          String
+  passwordChangedAt     DateTime?
+  mustChangePassword    Boolean    @default(false)
+
+  role                  UserRole   @default(MEMBER)
+  status                UserStatus @default(PENDING_VERIFICATION)
+
+  emailVerifiedAt       DateTime?
+  phoneVerifiedAt       DateTime?
+
+  /// Brute-force protection. Reset on a successful login.
+  failedLoginAttempts   Int        @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+
+  twoFactorEnabled      Boolean    @default(false)
+  twoFactorSecret       String?
+
+  createdById           String?
+  createdBy             User?      @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers          User[]     @relation("UserCreatedBy")
+
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  deactivatedAt         DateTime?
+
+  member                Member?
+  sessions              Session[]
+  loginActivities       LoginActivity[]
+  verificationTokens    VerificationToken[]
+  permissions           UserPermission[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  // Reverse relations for the many "who did this" columns across the system.
+  uploadedDocuments     Document[]           @relation("DocumentUploadedBy")
+  verifiedDocuments     Document[]           @relation("DocumentVerifiedBy")
+  postedTransactions    SavingsTransaction[] @relation("TransactionPostedBy")
+  reversedTransactions  SavingsTransaction[] @relation("TransactionReversedBy")
+  reviewedWithdrawals   Withdrawal[]         @relation("WithdrawalReviewedBy")
+  processedWithdrawals  Withdrawal[]         @relation("WithdrawalProcessedBy")
+  reviewedApplications  LoanApplication[]    @relation("ApplicationReviewedBy")
+  decidedApplications   LoanApplication[]    @relation("ApplicationDecidedBy")
+  disbursedLoans        Loan[]               @relation("LoanDisbursedBy")
+  postedLoanTxns        LoanTransaction[]    @relation("LoanTransactionPostedBy")
+  reconciliations       PaymentReconciliation[] @relation("ReconciliationPerformedBy")
+  matchedPayments       Payment[]            @relation("PaymentMatchedBy")
+  memberNotes           MemberNote[]         @relation("MemberNoteAuthor")
+  settingUpdates        SystemSetting[]      @relation("SettingUpdatedBy")
+
+  @@unique([email])
+  @@unique([phone])
+  @@index([associationId, role])
+  @@index([associationId, status])
+  @@index([role, status])
+  @@map("users")
+}
+
+/// Server-side session record. Sessions are stored (not purely stateless JWTs)
+/// so that an admin can revoke access immediately — a suspended member must
+/// lose access on the next request, not when their token happens to expire.
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 of the opaque session token. The raw token is only ever in the
+  /// user's cookie, so a database leak does not hand over live sessions.
+  tokenHash    String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  lastSeenAt   DateTime @default(now())
+  revokedAt    DateTime?
+  revokedReason String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model LoginActivity {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Captured even on failure, where userId may be null (unknown account).
+  identifier    String
+  success       Boolean
+  failureReason String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([identifier, createdAt])
+  @@index([createdAt])
+  @@map("login_activities")
+}
+
+model VerificationToken {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 of the emailed/SMS-ed token, same reasoning as Session.tokenHash.
+  tokenHash  String       @unique
+  purpose    TokenPurpose
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("verification_tokens")
+}
+
+/// Fine-grained capability, e.g. "loans.approve". Role grants supply the
+/// defaults; UserPermission rows add or revoke on top of them.
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  category    String
+  createdAt   DateTime @default(now())
+
+  roles       RolePermission[]
+  users       UserPermission[]
+
+  @@index([category])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         UserRole
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@map("role_permissions")
+}
+
+/// Per-user override. `granted = false` revokes a permission the user's role
+/// would otherwise give, which is why this is not a simple join table.
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  granted      Boolean    @default(true)
+  grantedById  String?
+  expiresAt    DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@map("user_permissions")
+}
+
+// ============================================================================
+// MEMBERS
+// ============================================================================
+
+model Member {
+  id                String       @id @default(cuid())
+  associationId     String
+  association       Association  @relation(fields: [associationId], references: [id], onDelete: Restrict)
+
+  userId            String       @unique
+  user              User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// Human-facing membership number, unique inside the association.
+  memberNumber      String
+
+  /// THE primary payment-matching key. Globally unique and printed on every
+  /// payment instruction given to the member, e.g. "RTA-000123". A payment
+  /// carrying this reference can be attributed with full confidence.
+  paymentReference  String       @unique
+
+  status            MemberStatus @default(PENDING_APPROVAL)
+  kycStatus         KycStatus    @default(UNVERIFIED)
+
+  nationalId        String?
+  dateOfBirth       DateTime?
+  gender            Gender?
+  occupation        String?
+  businessName      String?
+
+  addressLine1      String?
+  city              String?
+  district          String?
+  province          String?
+
+  /// Alternate identifiers used as fallback matching keys, in the order
+  /// defined by MatchStrategy. Normalised to E.164 / plain digits on write.
+  mobileMoneyNumber String?
+  bankAccountNumber String?
+
+  nextOfKinName     String?
+  nextOfKinPhone    String?
+  nextOfKinRelation String?
+
+  joinedAt          DateTime?
+  approvedAt        DateTime?
+  approvedById      String?
+  suspendedAt       DateTime?
+  suspensionReason  String?
+  exitedAt          DateTime?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  savingsAccounts   SavingsAccount[]
+  transactions      SavingsTransaction[]
+  withdrawals       Withdrawal[]
+  loanApplications  LoanApplication[]
+  loans             Loan[]
+  payments          Payment[]
+  documents         Document[]
+  notes             MemberNote[]
+  guarantorFor      Guarantor[]
+
+  @@unique([associationId, memberNumber])
+  @@index([associationId, status])
+  @@index([associationId, kycStatus])
+  @@index([mobileMoneyNumber])
+  @@index([bankAccountNumber])
+  @@index([nationalId])
+  @@map("members")
+}
+
+/// Free-text admin annotations on a member file. Append-only by convention.
+model MemberNote {
+  id         String   @id @default(cuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation("MemberNoteAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  body       String
+  /// Internal notes are hidden from the member's own portal.
+  isInternal Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([memberId, createdAt])
+  @@map("member_notes")
+}
+
+// ============================================================================
+// SAVINGS — ACCOUNTS & LEDGER
+// ============================================================================
+
+model SavingsAccount {
+  id                 String      @id @default(cuid())
+  associationId      String
+  association        Association @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  memberId           String
+  member             Member      @relation(fields: [memberId], references: [id], onDelete: Restrict)
+
+  accountNumber      String      @unique
+
+  /// CACHED balance. Only ever written inside the same DB transaction that
+  /// appends a SavingsTransaction, with this row locked FOR UPDATE. It must
+  /// always equal the balanceAfter of the highest-sequence ledger row.
+  balance            Decimal     @default(0) @db.Decimal(18, 2)
+
+  /// Portion of `balance` pledged against active loans or pending
+  /// withdrawals; availableBalance = balance - lockedBalance.
+  lockedBalance      Decimal     @default(0) @db.Decimal(18, 2)
+
+  /// Running totals maintained alongside the ledger for cheap dashboards.
+  /// Derived values — never a source of truth.
+  totalDeposits      Decimal     @default(0) @db.Decimal(18, 2)
+  totalWithdrawals   Decimal     @default(0) @db.Decimal(18, 2)
+  totalInterest      Decimal     @default(0) @db.Decimal(18, 2)
+  totalFees          Decimal     @default(0) @db.Decimal(18, 2)
+
+  /// Monotonic per-account counter. The next ledger row takes
+  /// lastSequence + 1, which makes gaps and replays detectable.
+  lastSequence       Int         @default(0)
+
+  currency           String      @default("RWF")
+  isActive           Boolean     @default(true)
+  openedAt           DateTime    @default(now())
+  closedAt           DateTime?
+  lastTransactionAt  DateTime?
+
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  transactions       SavingsTransaction[]
+  withdrawals        Withdrawal[]
+
+  @@index([associationId, isActive])
+  @@index([memberId])
+  @@map("savings_accounts")
+}
+
+/// THE SAVINGS LEDGER. Append-only: rows are never updated (except `status`
+/// on a reversal) and never deleted. Balance history is reconstructable by
+/// replaying rows in `sequence` order.
+model SavingsTransaction {
+  id                String               @id @default(cuid())
+  associationId     String
+  association       Association          @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  savingsAccountId  String
+  savingsAccount    SavingsAccount       @relation(fields: [savingsAccountId], references: [id], onDelete: Restrict)
+  memberId          String
+  member            Member               @relation(fields: [memberId], references: [id], onDelete: Restrict)
+
+  /// Position in this account's ledger. Unique per account — the database
+  /// itself rejects two concurrent writers trying to claim the same slot.
+  sequence          Int
+
+  /// Member-facing transaction id, e.g. "TXN-2026-0001234".
+  reference         String               @unique
+
+  type              TransactionType
+  direction         TransactionDirection
+  status            TransactionStatus    @default(COMPLETED)
+  channel           PaymentChannel       @default(INTERNAL_TRANSFER)
+
+  /// Always positive. Direction carries the sign.
+  amount            Decimal              @db.Decimal(18, 2)
+  balanceBefore     Decimal              @db.Decimal(18, 2)
+  balanceAfter      Decimal              @db.Decimal(18, 2)
+  currency          String               @default("RWF")
+
+  description       String?
+  /// Provider-side reference, mirrored here for statement display and search.
+  externalReference String?
+
+  // Source linkage — every ledger row is traceable back to what caused it.
+  paymentId         String?              @unique
+  payment           Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  withdrawalId      String?
+  withdrawal        Withdrawal?          @relation(fields: [withdrawalId], references: [id], onDelete: SetNull)
+  loanId            String?
+  loan              Loan?                @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  loanTransactionId String?
+  loanTransaction   LoanTransaction?     @relation(fields: [loanTransactionId], references: [id], onDelete: SetNull)
+
+  // Corrections: a reversal points at the row it cancels. Both rows survive.
+  reversalOfId      String?              @unique
+  reversalOf        SavingsTransaction?  @relation("TransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversedBy        SavingsTransaction?  @relation("TransactionReversal")
+  reversalReason    String?
+
+  /// Null when posted by the system (reconciliation, cron, accruals).
+  postedById        String?
+  postedBy          User?                @relation("TransactionPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+  reversedById      String?
+  reversedByUser    User?                @relation("TransactionReversedBy", fields: [reversedById], references: [id], onDelete: SetNull)
+
+  /// Mandatory justification for manual ADJUSTMENT rows — enforced in the
+  /// service layer, which refuses to post an adjustment without one.
+  adjustmentReason  String?
+
+  valueDate         DateTime             @default(now())
+  createdAt         DateTime             @default(now())
+
+  @@unique([savingsAccountId, sequence])
+  @@index([associationId, createdAt])
+  @@index([associationId, type, createdAt])
+  @@index([savingsAccountId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([externalReference])
+  @@map("savings_transactions")
+}
+
+/// Per-association savings policy. Separate from LoanProduct because savings
+/// rules apply association-wide rather than per product.
+model SavingsRule {
+  id                       String      @id @default(cuid())
+  associationId            String      @unique
+  association              Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+
+  minimumDeposit           Decimal     @default(0) @db.Decimal(18, 2)
+  maximumDeposit           Decimal?    @db.Decimal(18, 2)
+  minimumBalance           Decimal     @default(0) @db.Decimal(18, 2)
+
+  allowWithdrawals         Boolean     @default(true)
+  withdrawalRequiresApproval Boolean   @default(true)
+  minimumWithdrawal        Decimal     @default(0) @db.Decimal(18, 2)
+  maximumWithdrawal        Decimal?    @db.Decimal(18, 2)
+  withdrawalFeeType        ChargeType  @default(FIXED)
+  withdrawalFeeValue       Decimal     @default(0) @db.Decimal(18, 2)
+  withdrawalNoticeDays     Int         @default(0)
+
+  /// Monthly obligation, if the association enforces one.
+  monthlyContribution      Decimal?    @db.Decimal(18, 2)
+  contributionDueDay       Int?
+
+  annualInterestRate       Decimal     @default(0) @db.Decimal(9, 4)
+  interestPostingDay       Int?
+
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  @@map("savings_rules")
+}
+
+model Withdrawal {
+  id                String           @id @default(cuid())
+  associationId     String
+  association       Association      @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  memberId          String
+  member            Member           @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  savingsAccountId  String
+  savingsAccount    SavingsAccount   @relation(fields: [savingsAccountId], references: [id], onDelete: Restrict)
+
+  reference         String           @unique
+  amount            Decimal          @db.Decimal(18, 2)
+  fee               Decimal          @default(0) @db.Decimal(18, 2)
+  netAmount         Decimal          @db.Decimal(18, 2)
+  currency          String           @default("RWF")
+
+  status            WithdrawalStatus @default(PENDING)
+  reason            String?
+  channel           PaymentChannel   @default(BANK_TRANSFER)
+  destinationDetail String?
+
+  /// Snapshot of the balance when the request was raised, for audit context.
+  balanceAtRequest  Decimal          @db.Decimal(18, 2)
+
+  reviewedById      String?
+  reviewedBy        User?            @relation("WithdrawalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt        DateTime?
+  reviewNotes       String?
+  rejectionReason   String?
+
+  processedById     String?
+  processedBy       User?            @relation("WithdrawalProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
+  processedAt       DateTime?
+  externalReference String?
+
+  requestedAt       DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  transactions      SavingsTransaction[]
+
+  @@index([associationId, status, requestedAt])
+  @@index([memberId, requestedAt])
+  @@map("withdrawals")
+}
+
+// ============================================================================
+// PAYMENTS — PROVIDER CAPTURE & RECONCILIATION
+// ============================================================================
+
+/// Raw inbound payment as reported by a payment provider (Jenga/Equity today).
+/// Captured verbatim BEFORE any interpretation, so the original provider
+/// record survives regardless of what the matching engine later decides.
+///
+/// Idempotency lives here: the unique constraints below make it impossible for
+/// a replayed webhook or an overlapping poll window to create a second row for
+/// the same provider transaction, which is what would otherwise double-credit.
+model Payment {
+  id                    String         @id @default(cuid())
+  /// Nullable: a payment that cannot be attributed to any association yet is
+  /// still captured rather than dropped.
+  associationId         String?
+  association           Association?   @relation(fields: [associationId], references: [id], onDelete: Restrict)
+
+  provider              String         @default("JENGA")
+  channel               PaymentChannel @default(JENGA_EQUITY)
+
+  /// The provider's own transaction id. Unique per provider — this is the
+  /// primary duplicate guard.
+  externalTransactionId String
+  /// The provider's secondary reference (Jenga returns both an id and a
+  /// reference). Also provider-generated and therefore safe to constrain as
+  /// unique-when-present.
+  ///
+  /// This is NOT the payer's narration. Narration is free text that two
+  /// different payments can legitimately share — a member paying twice in the
+  /// same week may type the same thing both times — so constraining it would
+  /// reject the second real payment as a duplicate. Payer text lives in
+  /// `narration` below, and that is the field the matching engine reads a
+  /// member payment reference out of.
+  transactionReference  String?
+
+  amount                Decimal        @db.Decimal(18, 2)
+  currency              String         @default("RWF")
+
+  /// Provider's verbatim status string, kept unmapped for audit.
+  providerStatus        String?
+  status                PaymentStatus  @default(RECEIVED)
+
+  payerName             String?
+  payerPhone            String?
+  payerAccount          String?
+  payerBank             String?
+  /// Free text supplied by the payer. Deliberately NOT unique. The matching
+  /// engine scans this for a member payment reference.
+  narration             String?
+  debitAccount          String?
+  creditAccount         String?
+
+  transactionDate       DateTime
+  valueDate             DateTime?
+
+  /// Untouched provider response. Never parsed for authority — only for
+  /// audit, debugging and dispute resolution.
+  rawPayload            Json?
+
+  /// How the record arrived: "WEBHOOK" | "POLL" | "MANUAL".
+  ingestSource          String         @default("POLL")
+  /// Set when the provider was re-queried and confirmed the transaction as
+  /// successful. A payment is never posted to the ledger without this.
+  verifiedAt            DateTime?
+  verificationResponse  Json?
+
+  matchedMemberId       String?
+  matchedMember         Member?        @relation(fields: [matchedMemberId], references: [id], onDelete: SetNull)
+  matchStrategy         MatchStrategy  @default(NONE)
+  /// 0–100. Anything below the configured threshold goes to UNMATCHED rather
+  /// than being auto-credited.
+  matchConfidence       Int            @default(0)
+  matchedById           String?
+  matchedBy             User?          @relation("PaymentMatchedBy", fields: [matchedById], references: [id], onDelete: SetNull)
+  matchedAt             DateTime?
+
+  processedAt           DateTime?
+  failureReason         String?
+  retryCount            Int            @default(0)
+  lastRetryAt           DateTime?
+  nextRetryAt           DateTime?
+
+  /// Raised by the fraud checks (unusual amount, repeated payer, etc.).
+  isSuspicious          Boolean        @default(false)
+  suspicionReason       String?
+
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  savingsTransaction    SavingsTransaction?
+  reconciliations       PaymentReconciliation[]
+
+  @@unique([provider, externalTransactionId])
+  @@unique([provider, transactionReference])
+  @@index([status, transactionDate])
+  @@index([associationId, status])
+  @@index([matchedMemberId])
+  @@index([payerPhone])
+  @@index([nextRetryAt])
+  @@index([isSuspicious])
+  @@map("payments")
+}
+
+/// One row per matching/processing attempt against a Payment. This is the
+/// audit trail that answers "why was this credited to this member?" — and for
+/// manual reconciliation, "which admin decided that, and on what grounds?".
+model PaymentReconciliation {
+  id             String                @id @default(cuid())
+  paymentId      String
+  payment        Payment               @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  attempt        Int                   @default(1)
+  outcome        ReconciliationOutcome
+  strategy       MatchStrategy         @default(NONE)
+  confidence     Int                   @default(0)
+
+  /// Members the engine considered, for AMBIGUOUS outcomes.
+  candidateIds   String[]
+  resolvedMemberId String?
+
+  notes          String?
+  errorMessage   String?
+  /// Null for automated runs; set for MANUAL_OVERRIDE.
+  performedById  String?
+  performedBy    User?                 @relation("ReconciliationPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime              @default(now())
+
+  @@index([paymentId, attempt])
+  @@index([outcome, createdAt])
+  @@map("payment_reconciliations")
+}
+
+/// Generic idempotency guard for mutating API calls. A client retrying a
+/// request with the same key gets the stored response instead of a second
+/// side effect.
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  scope        String
+  userId       String?
+  requestHash  String
+  responseCode Int?
+  responseBody Json?
+  lockedAt     DateTime?
+  completedAt  DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+// ============================================================================
+// LOANS
+// ============================================================================
+
+/// Configurable loan rules. Eligibility and pricing are DATA, not code — an
+/// association can define several products with different limits and rates
+/// without any change to the application.
+model LoanProduct {
+  id                      String             @id @default(cuid())
+  associationId           String
+  association             Association        @relation(fields: [associationId], references: [id], onDelete: Cascade)
+
+  name                    String
+  code                    String
+  description             String?
+  isActive                Boolean            @default(true)
+
+  // Eligibility
+  minimumSavings          Decimal            @default(0) @db.Decimal(18, 2)
+  /// Maximum loan = savings × this multiplier (the "3× savings" rule, made
+  /// configurable rather than hard-coded).
+  savingsMultiplier       Decimal            @default(3) @db.Decimal(9, 2)
+  minimumMembershipMonths Int                @default(0)
+  minAmount               Decimal            @default(0) @db.Decimal(18, 2)
+  maxAmount               Decimal            @db.Decimal(18, 2)
+  /// Hard ceiling applied after the multiplier calculation.
+  absoluteMaxAmount       Decimal?           @db.Decimal(18, 2)
+
+  // Pricing
+  interestRate            Decimal            @db.Decimal(9, 4)
+  interestMethod          InterestMethod     @default(REDUCING_BALANCE)
+  /// Period the rate is quoted over: "ANNUAL" | "MONTHLY".
+  interestPeriod          String             @default("ANNUAL")
+
+  processingFeeType       ChargeType         @default(PERCENTAGE)
+  processingFeeValue      Decimal            @default(0) @db.Decimal(18, 2)
+  insuranceFeeType        ChargeType         @default(PERCENTAGE)
+  insuranceFeeValue       Decimal            @default(0) @db.Decimal(18, 2)
+
+  penaltyType             ChargeType         @default(PERCENTAGE)
+  penaltyValue            Decimal            @default(0) @db.Decimal(18, 2)
+  penaltyGraceDays        Int                @default(0)
+
+  // Term
+  minTermMonths           Int                @default(1)
+  maxTermMonths           Int                @default(24)
+  gracePeriodDays         Int                @default(0)
+  allowedFrequencies      RepaymentFrequency[]
+  defaultFrequency        RepaymentFrequency @default(MONTHLY)
+
+  // Guarantors & collateral
+  requiresGuarantors      Boolean            @default(false)
+  minimumGuarantors       Int                @default(0)
+  requiresCollateral      Boolean            @default(false)
+
+  /// Only one active loan of this product per member when true.
+  singleActiveLoan        Boolean            @default(true)
+
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  applications            LoanApplication[]
+  loans                   Loan[]
+
+  @@unique([associationId, code])
+  @@index([associationId, isActive])
+  @@map("loan_products")
+}
+
+model LoanApplication {
+  id                  String                @id @default(cuid())
+  associationId       String
+  association         Association           @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  memberId            String
+  member              Member                @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  loanProductId       String
+  loanProduct         LoanProduct           @relation(fields: [loanProductId], references: [id], onDelete: Restrict)
+
+  reference           String                @unique
+  status              LoanApplicationStatus @default(DRAFT)
+
+  requestedAmount     Decimal               @db.Decimal(18, 2)
+  purpose             String
+  termMonths          Int
+  frequency           RepaymentFrequency    @default(MONTHLY)
+
+  /// Eligibility snapshot at submission time — what the member's savings and
+  /// computed ceiling were when they applied, so a later approval can be
+  /// judged against the facts that existed then.
+  savingsAtApplication Decimal?             @db.Decimal(18, 2)
+  maxEligibleAmount    Decimal?             @db.Decimal(18, 2)
+  eligibilityPassed    Boolean?
+  eligibilityReport    Json?
+
+  // Decision
+  approvedAmount      Decimal?              @db.Decimal(18, 2)
+  approvedRate        Decimal?              @db.Decimal(9, 4)
+  approvedTermMonths  Int?
+  approvedFrequency   RepaymentFrequency?
+
+  submittedAt         DateTime?
+  reviewedById        String?
+  reviewedBy          User?                 @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt          DateTime?
+  reviewNotes         String?
+
+  decidedById         String?
+  decidedBy           User?                 @relation("ApplicationDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt           DateTime?
+  rejectionReason     String?
+  infoRequested       String?
+  infoRequestedAt     DateTime?
+
+  cancelledAt         DateTime?
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  loan                Loan?
+  guarantors          Guarantor[]
+  documents           Document[]
+  statusHistory       LoanApplicationEvent[]
+
+  @@index([associationId, status, submittedAt])
+  @@index([memberId, createdAt])
+  @@map("loan_applications")
+}
+
+/// Immutable trail of every state change on an application.
+model LoanApplicationEvent {
+  id            String                 @id @default(cuid())
+  applicationId String
+  application   LoanApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    LoanApplicationStatus?
+  toStatus      LoanApplicationStatus
+  actorId       String?
+  note          String?
+  createdAt     DateTime               @default(now())
+
+  @@index([applicationId, createdAt])
+  @@map("loan_application_events")
+}
+
+model Loan {
+  id                    String             @id @default(cuid())
+  associationId         String
+  association           Association        @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  memberId              String
+  member                Member             @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  loanProductId         String
+  loanProduct           LoanProduct        @relation(fields: [loanProductId], references: [id], onDelete: Restrict)
+  applicationId         String?            @unique
+  application           LoanApplication?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  reference             String             @unique
+  status                LoanStatus         @default(PENDING_DISBURSEMENT)
+
+  // Terms as approved. Frozen at disbursement.
+  principal             Decimal            @db.Decimal(18, 2)
+  interestRate          Decimal            @db.Decimal(9, 4)
+  interestMethod        InterestMethod
+  interestPeriod        String             @default("ANNUAL")
+  termMonths            Int
+  frequency             RepaymentFrequency
+  gracePeriodDays       Int                @default(0)
+  currency              String             @default("RWF")
+
+  // Computed totals
+  totalInterest         Decimal            @default(0) @db.Decimal(18, 2)
+  processingFee         Decimal            @default(0) @db.Decimal(18, 2)
+  insuranceFee          Decimal            @default(0) @db.Decimal(18, 2)
+  totalFees             Decimal            @default(0) @db.Decimal(18, 2)
+  totalPayable          Decimal            @default(0) @db.Decimal(18, 2)
+
+  // Live outstanding position, split so that repayment allocation is exact.
+  principalOutstanding  Decimal            @default(0) @db.Decimal(18, 2)
+  interestOutstanding   Decimal            @default(0) @db.Decimal(18, 2)
+  feesOutstanding       Decimal            @default(0) @db.Decimal(18, 2)
+  penaltyOutstanding    Decimal            @default(0) @db.Decimal(18, 2)
+
+  principalPaid         Decimal            @default(0) @db.Decimal(18, 2)
+  interestPaid          Decimal            @default(0) @db.Decimal(18, 2)
+  feesPaid              Decimal            @default(0) @db.Decimal(18, 2)
+  penaltyPaid           Decimal            @default(0) @db.Decimal(18, 2)
+  totalPaid             Decimal            @default(0) @db.Decimal(18, 2)
+
+  disbursedAmount       Decimal?           @db.Decimal(18, 2)
+  disbursedAt           DateTime?
+  disbursedById         String?
+  disbursedBy           User?              @relation("LoanDisbursedBy", fields: [disbursedById], references: [id], onDelete: SetNull)
+  disbursementChannel   PaymentChannel?
+  disbursementReference String?
+
+  firstRepaymentDate    DateTime?
+  maturityDate          DateTime?
+  lastRepaymentAt       DateTime?
+  completedAt           DateTime?
+
+  daysOverdue           Int                @default(0)
+  overdueAmount         Decimal            @default(0) @db.Decimal(18, 2)
+  defaultedAt           DateTime?
+  writtenOffAt          DateTime?
+
+  /// Loan restructuring: the new loan points back at the one it replaced.
+  restructuredFromId    String?            @unique
+  restructuredFrom      Loan?              @relation("LoanRestructure", fields: [restructuredFromId], references: [id], onDelete: SetNull)
+  restructuredTo        Loan?              @relation("LoanRestructure")
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  installments          LoanInstallment[]
+  transactions          LoanTransaction[]
+  savingsTransactions   SavingsTransaction[]
+  guarantors            Guarantor[]
+  documents             Document[]
+
+  @@index([associationId, status])
+  @@index([memberId, status])
+  @@index([status, daysOverdue])
+  @@index([maturityDate])
+  @@map("loans")
+}
+
+/// One row per scheduled instalment. Generated at disbursement and updated as
+/// repayments are allocated against it.
+model LoanInstallment {
+  id                 String            @id @default(cuid())
+  loanId             String
+  loan               Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  installmentNumber  Int
+  dueDate            DateTime
+  status             InstallmentStatus @default(UPCOMING)
+
+  principalDue       Decimal           @db.Decimal(18, 2)
+  interestDue        Decimal           @db.Decimal(18, 2)
+  feesDue            Decimal           @default(0) @db.Decimal(18, 2)
+  penaltyDue         Decimal           @default(0) @db.Decimal(18, 2)
+  totalDue           Decimal           @db.Decimal(18, 2)
+
+  principalPaid      Decimal           @default(0) @db.Decimal(18, 2)
+  interestPaid       Decimal           @default(0) @db.Decimal(18, 2)
+  feesPaid           Decimal           @default(0) @db.Decimal(18, 2)
+  penaltyPaid        Decimal           @default(0) @db.Decimal(18, 2)
+  totalPaid          Decimal           @default(0) @db.Decimal(18, 2)
+
+  /// Principal still owed after this instalment, per the original schedule.
+  balanceAfter       Decimal           @db.Decimal(18, 2)
+
+  paidAt             DateTime?
+  daysOverdue        Int               @default(0)
+  waivedAt           DateTime?
+  waivedById         String?
+  waiverReason       String?
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  allocations        LoanRepaymentAllocation[]
+
+  @@unique([loanId, installmentNumber])
+  @@index([loanId, dueDate])
+  @@index([status, dueDate])
+  @@map("loan_installments")
+}
+
+/// THE LOAN LEDGER. Append-only, same discipline as SavingsTransaction.
+model LoanTransaction {
+  id                String              @id @default(cuid())
+  associationId     String
+  association       Association         @relation(fields: [associationId], references: [id], onDelete: Restrict)
+  loanId            String
+  loan              Loan                @relation(fields: [loanId], references: [id], onDelete: Restrict)
+
+  sequence          Int
+  reference         String              @unique
+  type              LoanTransactionType
+  status            TransactionStatus   @default(COMPLETED)
+  channel           PaymentChannel      @default(INTERNAL_TRANSFER)
+
+  amount            Decimal             @db.Decimal(18, 2)
+
+  // Allocation split for REPAYMENT rows.
+  principalPortion  Decimal             @default(0) @db.Decimal(18, 2)
+  interestPortion   Decimal             @default(0) @db.Decimal(18, 2)
+  feesPortion       Decimal             @default(0) @db.Decimal(18, 2)
+  penaltyPortion    Decimal             @default(0) @db.Decimal(18, 2)
+
+  /// Total outstanding across all buckets after this row was posted.
+  balanceAfter      Decimal             @db.Decimal(18, 2)
+  currency          String              @default("RWF")
+
+  description       String?
+  externalReference String?
+
+  reversalOfId      String?             @unique
+  reversalOf        LoanTransaction?    @relation("LoanTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversedBy        LoanTransaction?    @relation("LoanTransactionReversal")
+  reversalReason    String?
+
+  postedById        String?
+  postedBy          User?               @relation("LoanTransactionPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+  adjustmentReason  String?
+
+  valueDate         DateTime            @default(now())
+  createdAt         DateTime            @default(now())
+
+  allocations         LoanRepaymentAllocation[]
+  savingsTransactions SavingsTransaction[]
+
+  @@unique([loanId, sequence])
+  @@index([associationId, createdAt])
+  @@index([loanId, createdAt])
+  @@index([type, createdAt])
+  @@map("loan_transactions")
+}
+
+/// Links a repayment to the instalment(s) it settled, with the exact split.
+/// Without this, "which instalment did this payment clear?" is unanswerable.
+model LoanRepaymentAllocation {
+  id                String          @id @default(cuid())
+  loanTransactionId String
+  loanTransaction   LoanTransaction @relation(fields: [loanTransactionId], references: [id], onDelete: Cascade)
+  installmentId     String
+  installment       LoanInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+
+  principalAmount   Decimal         @default(0) @db.Decimal(18, 2)
+  interestAmount    Decimal         @default(0) @db.Decimal(18, 2)
+  feesAmount        Decimal         @default(0) @db.Decimal(18, 2)
+  penaltyAmount     Decimal         @default(0) @db.Decimal(18, 2)
+  totalAmount       Decimal         @db.Decimal(18, 2)
+
+  createdAt         DateTime        @default(now())
+
+  @@unique([loanTransactionId, installmentId])
+  @@index([installmentId])
+  @@map("loan_repayment_allocations")
+}
+
+model Guarantor {
+  id                 String          @id @default(cuid())
+  applicationId      String?
+  application        LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  loanId             String?
+  loan               Loan?           @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  /// A guarantor who is a member of the association; external guarantors are
+  /// captured by the free-text fields instead.
+  guarantorMemberId  String?
+  guarantorMember    Member?         @relation(fields: [guarantorMemberId], references: [id], onDelete: SetNull)
+
+  fullName           String
+  phone              String?
+  nationalId         String?
+  relationship       String?
+
+  /// Amount of the loan this guarantor stands for.
+  guaranteedAmount   Decimal?        @db.Decimal(18, 2)
+  status             GuarantorStatus @default(PENDING)
+  respondedAt        DateTime?
+  declineReason      String?
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([applicationId])
+  @@index([loanId])
+  @@index([guarantorMemberId, status])
+  @@map("guarantors")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id            String              @id @default(cuid())
+  associationId String?
+  association   Association?        @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Stable machine key, e.g. "PAYMENT_RECEIVED", used for templating and
+  /// per-user channel preferences.
+  eventType     String
+  title         String
+  body          String
+  severity      NotificationSeverity @default(INFO)
+
+  /// Deep link into the dashboard, e.g. "/dashboard/member/savings".
+  actionUrl     String?
+  /// Entity this notification refers to, for grouping and navigation.
+  entityType    String?
+  entityId      String?
+  metadata      Json?
+
+  readAt        DateTime?
+  createdAt     DateTime            @default(now())
+
+  deliveries    NotificationDelivery[]
+
+  @@index([userId, readAt, createdAt])
+  @@index([associationId, eventType, createdAt])
+  @@map("notifications")
+}
+
+/// One row per channel attempt. Keeping delivery separate from the
+/// notification itself is what lets the SMS provider be swapped without
+/// touching notification history.
+model NotificationDelivery {
+  id             String              @id @default(cuid())
+  notificationId String
+  notification   Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  channel        NotificationChannel
+  status         NotificationStatus  @default(PENDING)
+  /// Which adapter handled it, e.g. "SMTP", "TWILIO", "AFRICASTALKING".
+  provider       String?
+  destination    String?
+  providerMessageId String?
+  errorMessage   String?
+  attempts       Int                 @default(0)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  nextRetryAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([notificationId])
+  @@map("notification_deliveries")
+}
+
+/// Per-user, per-event channel opt-outs. Absence of a row means "use the
+/// association default".
+model NotificationPreference {
+  id        String              @id @default(cuid())
+  userId    String
+  eventType String
+  channel   NotificationChannel
+  enabled   Boolean             @default(true)
+  updatedAt DateTime            @updatedAt
+
+  @@unique([userId, eventType, channel])
+  @@map("notification_preferences")
+}
+
+// ============================================================================
+// DOCUMENTS, SETTINGS, AUDIT & JOBS
+// ============================================================================
+
+model Document {
+  id            String       @id @default(cuid())
+  associationId String
+  association   Association  @relation(fields: [associationId], references: [id], onDelete: Cascade)
+
+  memberId      String?
+  member        Member?      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  loanId        String?
+  loan          Loan?        @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  type          DocumentType
+  title         String
+  /// Storage key, not a public URL — access is brokered by an authorised
+  /// route handler so documents are never directly fetchable.
+  storageKey    String
+  mimeType      String
+  sizeBytes     Int
+  checksum      String?
+
+  uploadedById  String?
+  uploadedBy    User?        @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  verifiedById  String?
+  verifiedBy    User?        @relation("DocumentVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt    DateTime?
+  rejectionReason String?
+
+  createdAt     DateTime     @default(now())
+  deletedAt     DateTime?
+
+  @@index([associationId, type])
+  @@index([memberId])
+  @@index([applicationId])
+  @@index([loanId])
+  @@map("documents")
+}
+
+/// Key/value configuration. Scope PLATFORM rows have associationId = null;
+/// ASSOCIATION rows override them for one tenant. Business rules live here
+/// rather than in code.
+model SystemSetting {
+  id            String           @id @default(cuid())
+  scope         SettingScope     @default(PLATFORM)
+  associationId String?
+  association   Association?     @relation(fields: [associationId], references: [id], onDelete: Cascade)
+
+  /// Denormalised uniqueness key: "PLATFORM::<key>" or "ASSOCIATION:<id>:<key>".
+  ///
+  /// A plain @@unique([scope, associationId, key]) does NOT work here, because
+  /// Postgres treats NULLs as distinct in a unique index — two PLATFORM rows
+  /// with associationId = null and the same key would both be accepted, and
+  /// the application would then read whichever one it happened to find first.
+  /// Collapsing the null into a literal makes the constraint real.
+  scopeKey      String           @unique
+
+  key           String
+  value         String
+  valueType     SettingValueType @default(STRING)
+  category      String           @default("general")
+  label         String?
+  description   String?
+
+  /// Encrypted at rest and never returned to any client. Used for provider
+  /// credentials that must be editable without a redeploy.
+  isSecret      Boolean          @default(false)
+  /// Whether an association admin may change it, or only a super admin.
+  isEditable    Boolean          @default(true)
+
+  updatedById   String?
+  updatedBy     User?            @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([scope, associationId, key])
+  @@index([category])
+  @@map("system_settings")
+}
+
+/// Immutable record of every consequential action. Financial records are
+/// never silently changed — if a balance moved, there is a row here naming
+/// who moved it, when, from what, to what.
+model AuditLog {
+  id            String        @id @default(cuid())
+  associationId String?
+  association   Association?  @relation(fields: [associationId], references: [id], onDelete: SetNull)
+
+  actorId       String?
+  actor         User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  /// Denormalised so the trail survives even if the user record is removed.
+  actorRole     UserRole?
+  actorEmail    String?
+
+  /// Verb constant, e.g. "ADMIN_APPROVED_LOAN", "BALANCE_ADJUSTED".
+  action        String
+  entityType    String
+  entityId      String?
+
+  oldValue      Json?
+  newValue      Json?
+  /// Human-readable justification, mandatory for financial adjustments.
+  reason        String?
+  metadata      Json?
+
+  severity      AuditSeverity @default(INFO)
+  ipAddress     String?
+  userAgent     String?
+  requestId     String?
+
+  createdAt     DateTime      @default(now())
+
+  @@index([associationId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@index([severity, createdAt])
+  @@map("audit_logs")
+}
+
+/// Execution history for background jobs, so a failed reconciliation run is
+/// visible in the super-admin dashboard rather than silently lost.
+model JobRun {
+  id            String    @id @default(cuid())
+  jobName       String
+  status        JobStatus @default(RUNNING)
+  startedAt     DateTime  @default(now())
+  finishedAt    DateTime?
+  durationMs    Int?
+
+  itemsProcessed Int      @default(0)
+  itemsSucceeded Int      @default(0)
+  itemsFailed    Int      @default(0)
+
+  /// Cursor/watermark so the next run resumes where this one stopped.
+  cursor        String?
+  errorMessage  String?
+  details       Json?
+
+  @@index([jobName, startedAt])
+  @@index([status])
+  @@map("job_runs")
+}

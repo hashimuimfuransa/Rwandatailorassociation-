@@ -11,6 +11,7 @@ export interface Dictionary {
   navbar: {
     changeLanguage: string;
     becomeMember: string;
+    signIn: string;
     openMenu: string;
     closeMenu: string;
     primaryNav: string;
@@ -117,6 +118,7 @@ const dictionary: Record<Locale, Dictionary> = {
     navbar: {
       changeLanguage: "Change language",
       becomeMember: "Become Member",
+      signIn: "Sign in",
       openMenu: "Open menu",
       closeMenu: "Close menu",
       primaryNav: "Primary",
@@ -241,6 +243,7 @@ const dictionary: Record<Locale, Dictionary> = {
     navbar: {
       changeLanguage: "Hindura ururimi",
       becomeMember: "Ba Umunyamuryango",
+      signIn: "Injira",
       openMenu: "Fungura menu",
       closeMenu: "Funga menu",
       primaryNav: "Ibanze",

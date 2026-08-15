@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import { Poppins, Manrope } from "next/font/google";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import "./globals.css";
+
+/**
+ * Root layout — the shell shared by every area of the platform.
+ *
+ * The marketing Navbar and Footer used to live here. They moved down into
+ * app/(public)/layout.tsx when the dashboards were added, because a signed-in
+ * member looking at their savings balance should not be shown a "Become a
+ * Member" call to action. The public pages themselves are unchanged and still
+ * render exactly as before.
+ *
+ * Fonts, tokens and the language provider stay at this level so branding and
+ * locale are consistent everywhere, dashboards included.
+ */
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -49,12 +60,8 @@ export default function RootLayout({
       lang="en"
       className={`${poppins.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-ink">
-        <LanguageProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </LanguageProvider>
+      <body className="min-h-full bg-background text-ink">
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );
