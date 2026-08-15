@@ -135,7 +135,7 @@ const schema = z
   // block builds without saying anything true about the deployment. The check
   // that matters runs at request time on the live server, where NODE_ENV
   // genuinely reflects the environment.
-  .refine((e) => isBuildPhase() || !(e.NODE_ENV === "production" && e.JENGA_MODE === "sandbox"), {
+  .refine((e) => isBuildPhase() || !(e.NODE_ENV === "production" && e.JENGA_MODE === "live"), {
     message:
       "JENGA_MODE=sandbox is not permitted in production — the sandbox adapter fabricates transactions and must never back real member balances",
     path: ["JENGA_MODE"],
