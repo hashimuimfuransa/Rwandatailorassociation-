@@ -8,10 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { useLanguage } from "@/components/LanguageProvider";
 import { assessPasswordStrength } from "@/lib/auth/password.shared";
 
 export function ChangePasswordForm() {
   const router = useRouter();
+
+  const { d } = useLanguage();
+  const copy = d.auth.changePassword;
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +51,7 @@ export function ChangePasswordForm() {
 
       if (!response.ok) {
         if (payload?.error?.details) setErrors(payload.error.details);
-        setError(payload?.error?.message ?? "Could not change your password");
+        setError(payload?.error?.message ?? copy.failed);
         setSubmitting(false);
         return;
       }
@@ -60,7 +64,7 @@ export function ChangePasswordForm() {
       // Refresh so the "must change password" banner clears.
       router.refresh();
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(d.common.serverUnreachable);
       setSubmitting(false);
     }
   }
@@ -72,12 +76,12 @@ export function ChangePasswordForm() {
       noValidate
     >
       <h2 className="font-heading text-base font-semibold text-ink">
-        Change your password
+        {copy.title}
       </h2>
 
       {done && (
         <Alert variant="success" className="mt-4">
-          Your password has been changed and other devices have been signed out.
+          {copy.done}
         </Alert>
       )}
 
@@ -90,7 +94,7 @@ export function ChangePasswordForm() {
       <div className="mt-5 space-y-5">
         <Field
           id="current-password"
-          label="Current password"
+          label={copy.currentPassword}
           error={errors.currentPassword}
           required
         >
@@ -105,7 +109,12 @@ export function ChangePasswordForm() {
           )}
         </Field>
 
-        <Field id="new-password" label="New password" error={errors.password} required>
+        <Field
+          id="new-password"
+          label={copy.newPassword}
+          error={errors.password}
+          required
+        >
           {(props) => (
             <div className="relative">
               <Input
@@ -114,13 +123,13 @@ export function ChangePasswordForm() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 10 characters"
+                placeholder={copy.newPasswordPlaceholder}
                 className="pr-12"
               />
               <button
                 type="button"
                 onClick={() => setShow((v) => !v)}
-                aria-label={show ? "Hide passwords" : "Show passwords"}
+                aria-label={show ? copy.hidePasswords : copy.showPasswords}
                 className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
               >
                 {show ? (
@@ -137,10 +146,10 @@ export function ChangePasswordForm() {
 
         <Field
           id="confirm-new-password"
-          label="Confirm new password"
+          label={copy.confirmPassword}
           error={
             confirmPassword && password !== confirmPassword
-              ? "Passwords do not match"
+              ? copy.mismatch
               : errors.confirmPassword
           }
           required
@@ -161,12 +170,12 @@ export function ChangePasswordForm() {
         {submitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            Saving…
+            {copy.submitting}
           </>
         ) : (
           <>
             <KeyRound className="size-4" aria-hidden="true" />
-            Change password
+            {copy.submit}
           </>
         )}
       </Button>

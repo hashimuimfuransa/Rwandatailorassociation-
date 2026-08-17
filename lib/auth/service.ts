@@ -354,6 +354,7 @@ export async function registerMember(
             nationalId: input.nationalId ?? null,
             occupation: input.occupation ?? null,
             district: input.district ?? null,
+            province: input.province ?? null,
             savingsAccounts: {
               create: {
                 associationId,

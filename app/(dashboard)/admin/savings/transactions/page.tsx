@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listTransactions } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { TransactionsView } from "@/components/dashboard/TransactionsView";
 import { parseTransactionType } from "@/lib/validation/filters";
@@ -26,6 +27,7 @@ export default async function AdminTransactionsPage({
   );
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const data = await listTransactions(associationId, {
     page: Number(params.page) || 1,
@@ -38,8 +40,8 @@ export default async function AdminTransactionsPage({
   return (
     <div>
       <PageHeader
-        title="Transactions"
-        description="Every movement across every member's savings account."
+        title={d.admin.transactions.title}
+        description={d.admin.transactions.description}
       />
       <TransactionsView data={data} basePath="/admin/savings/transactions" />
     </div>

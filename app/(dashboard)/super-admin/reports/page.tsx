@@ -5,6 +5,8 @@ import { getReportBundle } from "@/lib/services/admin-queries";
 import { getAdminDashboard } from "@/lib/services/admin-dashboard";
 import { listAssociations } from "@/lib/services/associations";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { ReportsView } from "@/components/dashboard/ReportsView";
@@ -23,6 +25,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PlatformReportsPage() {
   await requireSuperAdmin("/super-admin/reports");
+  const { d } = await getDashboardCopy();
+  const copy = d.platform.reports;
 
   const [summary, reports, directory] = await Promise.all([
     getAdminDashboard(null),
@@ -32,36 +36,33 @@ export default async function PlatformReportsPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader
-        title="Platform reports"
-        description="Consolidated figures across every association."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Savings held"
+          label={copy.savingsHeld}
           value={formatMoney(summary.savings.totalBalance)}
-          hint={`${summary.members.total} members platform-wide`}
+          hint={pluralize(copy.membersPlatformWide, summary.members.total)}
           icon={PiggyBank}
           tone="primary"
         />
         <StatCard
-          label="Loans outstanding"
+          label={copy.loansOutstanding}
           value={formatMoney(summary.loans.outstanding)}
-          hint={`${summary.loans.activeCount} active loans`}
+          hint={pluralize(copy.activeLoans, summary.loans.activeCount)}
           icon={HandCoins}
         />
         <StatCard
-          label="In arrears"
+          label={copy.inArrears}
           value={formatMoney(summary.loans.overdueAmount)}
-          hint={`${summary.loans.overdueCount} overdue`}
+          hint={fill(copy.overdueCount, { count: summary.loans.overdueCount })}
           icon={AlertTriangle}
           tone={summary.loans.overdueCount > 0 ? "danger" : "success"}
         />
         <StatCard
-          label="Associations"
+          label={copy.associations}
           value={String(directory.totals.associations)}
-          hint={`${directory.totals.active} active`}
+          hint={fill(copy.activeCount, { count: directory.totals.active })}
           icon={Building2}
           href="/super-admin/associations"
         />
@@ -71,18 +72,18 @@ export default async function PlatformReportsPage() {
           see, and the reason this screen is separate from /admin/reports. */}
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          By association
+          {copy.byAssociation}
         </h2>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Association</TableHead>
-                <TableHead align="right">Members</TableHead>
-                <TableHead align="right">Savings</TableHead>
-                <TableHead align="right">Loans owing</TableHead>
-                <TableHead align="right">Overdue</TableHead>
-                <TableHead align="right">Unmatched</TableHead>
+                <TableHead>{copy.colAssociation}</TableHead>
+                <TableHead align="right">{copy.colMembers}</TableHead>
+                <TableHead align="right">{copy.colSavings}</TableHead>
+                <TableHead align="right">{copy.colLoansOwing}</TableHead>
+                <TableHead align="right">{copy.colOverdue}</TableHead>
+                <TableHead align="right">{copy.colUnmatched}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

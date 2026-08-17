@@ -12,22 +12,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const STATUSES = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PENDING_APPROVAL", label: "Pending approval" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "SUSPENDED", label: "Suspended" },
-  { value: "INACTIVE", label: "Inactive" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "EXITED", label: "Exited" },
-];
+import { useLanguage } from "@/components/LanguageProvider";
 
 /** Search and status filter for the member register. State lives in the URL. */
 export function MemberSearch({ basePath }: { basePath: string }) {
   const router = useRouter();
   const params = useSearchParams();
+  const { d } = useLanguage();
+  const copy = d.views.filters;
   const [query, setQuery] = useState(params.get("q") ?? "");
+
+  // Values are the MemberStatus enum; only the labels are translated.
+  const statuses = [
+    { value: "ALL", label: copy.allStatuses },
+    { value: "PENDING_APPROVAL", label: copy.pendingApproval },
+    { value: "ACTIVE", label: copy.active },
+    { value: "SUSPENDED", label: copy.suspended },
+    { value: "INACTIVE", label: copy.inactive },
+    { value: "REJECTED", label: copy.rejected },
+    { value: "EXITED", label: copy.exited },
+  ];
 
   function apply(next: Record<string, string | undefined>) {
     const search = new URLSearchParams(params.toString());
@@ -53,7 +57,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
     >
       <div className="flex-1">
         <label htmlFor="member-search" className="mb-1.5 block text-xs font-semibold text-ink">
-          Search
+          {copy.search}
         </label>
         <div className="relative">
           <Search
@@ -64,7 +68,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
             id="member-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name, member number, phone, payment reference…"
+            placeholder={copy.searchMembers}
             className="pl-10"
           />
         </div>
@@ -72,7 +76,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
 
       <div className="sm:w-52">
         <label htmlFor="member-status" className="mb-1.5 block text-xs font-semibold text-ink">
-          Status
+          {d.common.status}
         </label>
         <Select
           value={params.get("status") ?? "ALL"}
@@ -82,7 +86,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {STATUSES.map((s) => (
+            {statuses.map((s) => (
               <SelectItem key={s.value} value={s.value}>
                 {s.label}
               </SelectItem>
@@ -93,7 +97,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
 
       <div className="flex gap-2">
         <Button type="submit" size="sm">
-          Search
+          {copy.search}
         </Button>
         {hasFilters && (
           <Button
@@ -106,7 +110,7 @@ export function MemberSearch({ basePath }: { basePath: string }) {
             }}
           >
             <X className="size-3.5" aria-hidden="true" />
-            Clear
+            {copy.clear}
           </Button>
         )}
       </div>

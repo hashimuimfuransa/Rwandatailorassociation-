@@ -4,6 +4,8 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getReportBundle } from "@/lib/services/admin-queries";
 import { getAdminDashboard } from "@/lib/services/admin-dashboard";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { ReportsView } from "@/components/dashboard/ReportsView";
@@ -18,6 +20,8 @@ export default async function AdminReportsPage() {
     "/admin/reports"
   );
   const associationId = resolveAssociationScope(context);
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.reports;
 
   const [summary, reports] = await Promise.all([
     getAdminDashboard(associationId),
@@ -26,36 +30,35 @@ export default async function AdminReportsPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader
-        title="Reports"
-        description="Where the association's money is, and how it moved."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Savings held"
+          label={copy.savingsHeld}
           value={formatMoney(summary.savings.totalBalance)}
-          hint={`${summary.members.active} active members`}
+          hint={pluralize(copy.activeMembers, summary.members.active)}
           icon={PiggyBank}
           tone="primary"
         />
         <StatCard
-          label="Loans outstanding"
+          label={copy.loansOutstanding}
           value={formatMoney(summary.loans.outstanding)}
-          hint={`${summary.loans.activeCount} active loans`}
+          hint={pluralize(copy.activeLoans, summary.loans.activeCount)}
           icon={HandCoins}
         />
         <StatCard
-          label="In arrears"
+          label={copy.inArrears}
           value={formatMoney(summary.loans.overdueAmount)}
-          hint={`${summary.loans.overdueCount} overdue`}
+          hint={fill(copy.overdueCount, { count: summary.loans.overdueCount })}
           icon={AlertTriangle}
           tone={summary.loans.overdueCount > 0 ? "danger" : "success"}
         />
         <StatCard
-          label="Members"
+          label={copy.members}
           value={String(summary.members.total)}
-          hint={`${summary.members.joinedThisMonth} joined this month`}
+          hint={fill(copy.joinedThisMonth, {
+            count: summary.members.joinedThisMonth,
+          })}
           icon={Users}
         />
       </StatGrid>

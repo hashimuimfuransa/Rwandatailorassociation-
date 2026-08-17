@@ -5,6 +5,8 @@ import { requireSuperAdmin } from "@/lib/auth/guards";
 import { getSettings } from "@/lib/services/admin-queries";
 import { listAssociations } from "@/lib/services/associations";
 import { getEnv } from "@/lib/env";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -14,18 +16,20 @@ import { SettingsTable } from "@/components/dashboard/SettingsTable";
 export const metadata: Metadata = { title: "Platform settings | RTA" };
 export const dynamic = "force-dynamic";
 
-/** Hides everything but the host of a connection string. */
-function describeDatabase(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}${parsed.pathname}`;
-  } catch {
-    return "Configured";
-  }
-}
-
 export default async function PlatformSettingsPage() {
   await requireSuperAdmin("/super-admin/settings");
+  const { d } = await getDashboardCopy();
+  const copy = d.platform.settings;
+
+  /** Hides everything but the host of a connection string. */
+  function describeDatabase(url: string): string {
+    try {
+      const parsed = new URL(url);
+      return `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}${parsed.pathname}`;
+    } catch {
+      return copy.databaseConfigured;
+    }
+  }
 
   const [settings, directory] = await Promise.all([
     getSettings("PLATFORM", null),
@@ -38,84 +42,76 @@ export default async function PlatformSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Platform settings"
-        description="Global configuration and the runtime this deployment is using."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {production && sandbox && (
-        <Alert variant="error" title="Production is running the sandbox adapter">
-          Member balances would be backed by fabricated transactions. Set{" "}
-          <code>JENGA_MODE=live</code> immediately.
+        <Alert variant="error" title={copy.sandboxInProductionTitle}>
+          {copy.sandboxInProductionBody}
         </Alert>
       )}
 
       <StatGrid columns={4}>
         <StatCard
-          label="Environment"
+          label={copy.environment}
           value={env.NODE_ENV}
           hint={env.APP_URL}
           icon={Server}
           tone={production ? "primary" : "default"}
         />
         <StatCard
-          label="Payment mode"
-          value={sandbox ? "Sandbox" : "Live"}
-          hint={sandbox ? "Transactions are simulated" : "Real money"}
+          label={copy.paymentMode}
+          value={sandbox ? copy.sandbox : copy.live}
+          hint={sandbox ? copy.simulated : copy.realMoney}
           icon={ShieldCheck}
           tone={sandbox ? "warning" : "success"}
           href="/super-admin/integrations"
         />
         <StatCard
-          label="Associations"
+          label={copy.associations}
           value={String(directory.totals.associations)}
-          hint={`${directory.totals.members} members platform-wide`}
+          hint={pluralize(copy.membersPlatformWide, directory.totals.members)}
           icon={Database}
           href="/super-admin/associations"
         />
         <StatCard
-          label="Stored settings"
+          label={copy.storedSettings}
           value={String(settings.length)}
-          hint="Platform-scoped configuration rows"
+          hint={copy.storedSettingsHint}
           icon={SlidersHorizontal}
         />
       </StatGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={Server} title="Runtime">
-          <Row label="Node environment" value={env.NODE_ENV} />
-          <Row label="Application URL" value={env.APP_URL} mono />
-          <Row label="Database" value={describeDatabase(env.DATABASE_URL)} mono />
+        <Panel icon={Server} title={copy.runtime}>
+          <Row label={copy.nodeEnvironment} value={env.NODE_ENV} />
+          <Row label={copy.applicationUrl} value={env.APP_URL} mono />
+          <Row label={copy.database} value={describeDatabase(env.DATABASE_URL)} mono />
           <Row
-            label="Payment provider"
+            label={copy.paymentProvider}
             value={
               <StatusBadge
                 status={sandbox ? "PENDING" : "ACTIVE"}
-                label={sandbox ? "Sandbox" : "Live"}
+                label={sandbox ? copy.sandbox : copy.live}
                 tone={sandbox ? "warning" : "success"}
                 size="sm"
               />
             }
           />
-          <Row label="Email provider" value={env.EMAIL_PROVIDER} />
-          <Row label="SMS provider" value={env.SMS_PROVIDER} />
+          <Row label={copy.emailProvider} value={env.EMAIL_PROVIDER} />
+          <Row label={copy.smsProvider} value={env.SMS_PROVIDER} />
         </Panel>
 
-        <Panel icon={ShieldCheck} title="Where configuration lives">
+        <Panel icon={ShieldCheck} title={copy.whereConfigLives}>
           <p className="py-2 text-sm leading-relaxed text-ink-muted">
-            Secrets and connection details come from the environment, never from
-            the database — they must be settable before the application can
-            start, and they must not be readable through the web interface.
+            {copy.secretsNote}
           </p>
           <p className="py-2 text-sm leading-relaxed text-ink-muted">
-            The rows below are the settings that <em>can</em> change at runtime.
-            Association-specific rules live with each association instead; open
-            one from the{" "}
+            {copy.runtimeRowsNote}{" "}
             <Link
               href="/super-admin/associations"
               className="font-semibold text-primary hover:underline"
             >
-              tenant directory
+              {copy.tenantDirectory}
             </Link>
             .
           </p>
@@ -124,23 +120,18 @@ export default async function PlatformSettingsPage() {
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Platform configuration
+          {copy.platformConfiguration}
         </h2>
-        <SettingsTable
-          settings={settings}
-          emptyMessage="No platform settings are stored; every value currently comes from the environment."
-        />
+        <SettingsTable settings={settings} emptyMessage={copy.noStoredSettings} />
       </section>
 
       <p className="rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink-muted">
-        This screen is read-only. Editing global financial configuration from a
-        browser session is a single point of catastrophic failure, so changes go
-        through deployment and are recorded in the{" "}
+        {copy.readOnlyNote}{" "}
         <Link
           href="/super-admin/audit"
           className="font-semibold text-primary hover:underline"
         >
-          audit log
+          {copy.auditLog}
         </Link>
         .
       </p>

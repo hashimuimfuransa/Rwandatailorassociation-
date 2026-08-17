@@ -3,6 +3,7 @@ import { ArrowUpFromLine } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WithdrawalReviewTable } from "@/components/dashboard/WithdrawalReviewTable";
@@ -17,6 +18,8 @@ export default async function AdminWithdrawalsPage() {
   );
 
   const associationId = resolveAssociationScope(context);
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.withdrawals;
 
   const withdrawals = await prisma.withdrawal.findMany({
     where: {
@@ -52,16 +55,13 @@ export default async function AdminWithdrawalsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Withdrawals"
-        description="Requests awaiting review, and approved payouts to record."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {withdrawals.length === 0 ? (
         <EmptyState
           icon={ArrowUpFromLine}
-          title="No open withdrawal requests"
-          description="Requests awaiting approval or payout will appear here."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <WithdrawalReviewTable

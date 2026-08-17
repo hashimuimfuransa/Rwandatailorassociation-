@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { KeyRound, ShieldCheck, UserRound } from "lucide-react";
 import { requireMember } from "@/lib/auth/guards";
 import { getMemberSelfProfile } from "@/lib/services/member-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -12,14 +15,12 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = { title: "Profile | RTA" };
 export const dynamic = "force-dynamic";
 
-const DATE = { day: "numeric", month: "short", year: "numeric" } as const;
-
-function formatDate(value: Date | null | undefined): string {
-  return value ? value.toLocaleDateString("en-GB", DATE) : "—";
-}
-
 export default async function MemberProfilePage() {
   const context = await requireMember("/dashboard/profile");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.profile;
+  const field = d.forms.field;
+
   const profile = await getMemberSelfProfile(context.member!.id);
 
   // The guard guarantees a member record exists; a miss here means it was
@@ -27,26 +28,26 @@ export default async function MemberProfilePage() {
   if (!profile) notFound();
 
   const contactIncomplete = !profile.user.email || !profile.user.phone;
+  const date = (value: Date | null | undefined) => formatDate(value, locale);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Profile"
-        description="Your membership details as they are held by the association."
+        title={copy.title}
+        description={copy.description}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/account/password">
               <KeyRound className="size-3.5" aria-hidden="true" />
-              Change password
+              {copy.changePassword}
             </Link>
           </Button>
         }
       />
 
       {contactIncomplete && (
-        <Alert variant="warning" title="Your contact details are incomplete">
-          The association uses your phone and email to notify you about payments,
-          loan decisions and withdrawals. Ask an administrator to update them.
+        <Alert variant="warning" title={copy.incompleteTitle}>
+          {copy.incompleteBody}
         </Alert>
       )}
 
@@ -54,88 +55,88 @@ export default async function MemberProfilePage() {
           this page, because a payment made without it may not be credited. */}
       <section className="rounded-2xl border border-primary/25 bg-primary-50 p-5">
         <p className="text-[13px] font-semibold uppercase tracking-wider text-primary-hover">
-          Your payment reference
+          {copy.yourReference}
         </p>
         <p className="mt-2 font-mono text-2xl font-bold tracking-wide text-ink">
           {profile.paymentReference}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-          Quote this on every deposit so it is credited to your account
-          automatically. A payment without it has to be matched by hand and will
-          take longer to appear.
+          {copy.yourReferenceBody}
         </p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={UserRound} title="Membership">
-          <Row label="Full name" value={`${profile.user.firstName} ${profile.user.lastName}`.trim()} />
-          <Row label="Member number" value={profile.memberNumber} mono />
+        <Panel icon={UserRound} title={copy.membership}>
           <Row
-            label="Status"
+            label={d.common.fullName}
+            value={`${profile.user.firstName} ${profile.user.lastName}`.trim()}
+          />
+          <Row label={copy.memberNumber} value={profile.memberNumber} mono />
+          <Row
+            label={d.common.status}
             value={<StatusBadge status={profile.status} size="sm" />}
           />
           <Row
-            label="Identity check"
+            label={copy.identityCheck}
             value={<StatusBadge status={profile.kycStatus} size="sm" />}
           />
-          <Row label="Association" value={profile.association.name} />
-          <Row label="Joined" value={formatDate(profile.joinedAt ?? profile.createdAt)} />
-          <Row label="Approved" value={formatDate(profile.approvedAt)} />
+          <Row label={copy.association} value={profile.association.name} />
+          <Row label={copy.joined} value={date(profile.joinedAt ?? profile.createdAt)} />
+          <Row label={copy.approvedOn} value={date(profile.approvedAt)} />
         </Panel>
 
-        <Panel icon={ShieldCheck} title="Contact and security">
-          <Row label="Email" value={profile.user.email ?? "—"} />
+        <Panel icon={ShieldCheck} title={copy.contactSecurity}>
+          <Row label={d.common.email} value={profile.user.email ?? "—"} />
           <Row
-            label="Email verified"
-            value={profile.user.emailVerifiedAt ? "Yes" : "Not verified"}
+            label={copy.emailVerified}
+            value={profile.user.emailVerifiedAt ? d.common.yes : copy.notVerified}
           />
-          <Row label="Phone" value={profile.user.phone ?? "—"} />
+          <Row label={d.common.phone} value={profile.user.phone ?? "—"} />
           <Row
-            label="Phone verified"
-            value={profile.user.phoneVerifiedAt ? "Yes" : "Not verified"}
-          />
-          <Row
-            label="Two-factor"
-            value={profile.user.twoFactorEnabled ? "Enabled" : "Disabled"}
+            label={copy.phoneVerified}
+            value={profile.user.phoneVerifiedAt ? d.common.yes : copy.notVerified}
           />
           <Row
-            label="Password changed"
-            value={formatDate(profile.user.passwordChangedAt)}
+            label={copy.twoFactor}
+            value={profile.user.twoFactorEnabled ? copy.enabled : copy.disabled}
           />
-          <Row label="Last sign-in" value={formatDate(profile.user.lastLoginAt)} />
+          <Row
+            label={copy.passwordChanged}
+            value={date(profile.user.passwordChangedAt)}
+          />
+          <Row label={copy.lastSignIn} value={date(profile.user.lastLoginAt)} />
         </Panel>
 
-        <Panel icon={UserRound} title="Personal details">
-          <Row label="National ID" value={profile.nationalId ?? "—"} mono />
-          <Row label="Date of birth" value={formatDate(profile.dateOfBirth)} />
+        <Panel icon={UserRound} title={copy.personalDetails}>
+          <Row label={field.nationalId} value={profile.nationalId ?? "—"} mono />
+          <Row label={field.dateOfBirth} value={date(profile.dateOfBirth)} />
           <Row
-            label="Gender"
-            value={profile.gender ? titleCase(profile.gender) : "—"}
+            label={field.gender}
+            value={profile.gender ? translateGender(profile.gender, d) : "—"}
           />
-          <Row label="Occupation" value={profile.occupation ?? "—"} />
-          <Row label="Business" value={profile.businessName ?? "—"} />
+          <Row label={field.occupation} value={profile.occupation ?? "—"} />
+          <Row label={copy.business} value={profile.businessName ?? "—"} />
+          <Row label={field.district} value={profile.district ?? "—"} />
+          <Row label={field.province} value={profile.province ?? "—"} />
           <Row
-            label="Address"
+            label={field.address}
             value={
-              [profile.addressLine1, profile.city, profile.district, profile.province]
-                .filter(Boolean)
-                .join(", ") || "—"
+              [profile.addressLine1, profile.city].filter(Boolean).join(", ") || "—"
             }
           />
         </Panel>
 
-        <Panel icon={ShieldCheck} title="Payout and next of kin">
-          <Row label="Mobile money" value={profile.mobileMoneyNumber ?? "—"} mono />
-          <Row label="Bank account" value={profile.bankAccountNumber ?? "—"} mono />
-          <Row label="Next of kin" value={profile.nextOfKinName ?? "—"} />
-          <Row label="Their phone" value={profile.nextOfKinPhone ?? "—"} />
-          <Row label="Relationship" value={profile.nextOfKinRelation ?? "—"} />
+        <Panel icon={ShieldCheck} title={copy.payoutKin}>
+          <Row label={copy.mobileMoney} value={profile.mobileMoneyNumber ?? "—"} mono />
+          <Row label={copy.bankAccount} value={profile.bankAccountNumber ?? "—"} mono />
+          <Row label={copy.nextOfKin} value={profile.nextOfKinName ?? "—"} />
+          <Row label={copy.theirPhone} value={profile.nextOfKinPhone ?? "—"} />
+          <Row label={copy.relationship} value={profile.nextOfKinRelation ?? "—"} />
         </Panel>
       </div>
 
       <p className="rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink-muted">
-        These details are maintained by the association. To correct anything on
-        this page, contact{" "}
+        {copy.maintainedNote}{" "}
         {profile.association.email ? (
           <a
             href={`mailto:${profile.association.email}`}
@@ -144,16 +145,34 @@ export default async function MemberProfilePage() {
             {profile.association.email}
           </a>
         ) : (
-          "an administrator"
+          copy.anAdministrator
         )}
-        {profile.association.phone ? ` or call ${profile.association.phone}` : ""}.
+        {profile.association.phone
+          ? ` ${fill(copy.orCall, { phone: profile.association.phone })}`
+          : ""}
+        .
       </p>
     </div>
   );
 }
 
-function titleCase(value: string): string {
-  return value.charAt(0) + value.slice(1).toLowerCase();
+/** The stored enum, in the reader's language. */
+function translateGender(
+  gender: string,
+  d: Awaited<ReturnType<typeof getDashboardCopy>>["d"]
+): string {
+  switch (gender) {
+    case "MALE":
+      return d.forms.gender.male;
+    case "FEMALE":
+      return d.forms.gender.female;
+    case "OTHER":
+      return d.forms.gender.other;
+    case "UNDISCLOSED":
+      return d.forms.gender.undisclosed;
+    default:
+      return gender;
+  }
 }
 
 function Panel({

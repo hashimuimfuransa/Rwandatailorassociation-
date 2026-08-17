@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listPayments } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { PaymentsView } from "@/components/dashboard/PaymentsView";
 import { parsePaymentStatus, parsePage } from "@/lib/validation/filters";
@@ -20,6 +21,7 @@ export default async function PlatformPaymentsPage({
 }) {
   await requireSuperAdmin("/super-admin/payments");
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const search = params.q?.trim() || undefined;
   const status = parsePaymentStatus(params.status);
@@ -36,8 +38,8 @@ export default async function PlatformPaymentsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="All payments"
-        description="Every inbound payment across every association on the platform."
+        title={d.platform.payments.title}
+        description={d.platform.payments.description}
       />
       <PaymentsView
         data={data}

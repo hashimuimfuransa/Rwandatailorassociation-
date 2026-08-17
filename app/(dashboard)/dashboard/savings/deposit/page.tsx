@@ -3,6 +3,8 @@ import { Building2, Info, Smartphone } from "lucide-react";
 import { requireMember } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Alert } from "@/components/ui/alert";
 import { PaymentReferenceCard } from "@/components/dashboard/PaymentReferenceCard";
@@ -25,6 +27,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function DepositPage() {
   const context = await requireMember("/dashboard/savings/deposit");
+  const { d } = await getDashboardCopy();
+  const copy = d.member.deposit;
 
   const [association, rule] = await Promise.all([
     prisma.association.findUniqueOrThrow({
@@ -48,59 +52,55 @@ export default async function DepositPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <PageHeader
-        title="Make a deposit"
-        description="How to send money to your savings account."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <PaymentReferenceCard reference={reference} />
 
-      <Alert variant="warning" title="Always quote your reference">
-        A payment that arrives without <strong>{reference}</strong> cannot be
-        matched to you automatically. It will be held until an administrator
-        identifies it by hand, which delays your balance updating.
+      <Alert variant="warning" title={copy.alwaysQuoteTitle}>
+        <strong>{reference}</strong> {copy.alwaysQuoteBody}
       </Alert>
 
       {association.bankAccountNumber ? (
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
           <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
             <Building2 className="size-4 text-primary" aria-hidden="true" />
-            Bank transfer
+            {copy.bankTransfer}
           </h2>
 
           <dl className="mt-4 divide-y divide-border">
-            <Row label="Bank" value={association.bankName ?? "—"} />
+            <Row label={copy.bank} value={association.bankName ?? "—"} />
             <Row
-              label="Account name"
+              label={copy.accountName}
               value={association.bankAccountName ?? association.name}
             />
-            <Row label="Account number" value={association.bankAccountNumber} mono />
+            <Row
+              label={copy.accountNumber}
+              value={association.bankAccountNumber}
+              mono
+            />
             {association.bankBranchCode && (
-              <Row label="Branch code" value={association.bankBranchCode} mono />
+              <Row label={copy.branchCode} value={association.bankBranchCode} mono />
             )}
-            <Row label="Reference to quote" value={reference} mono highlight />
+            <Row label={copy.referenceToQuote} value={reference} mono highlight />
           </dl>
         </section>
       ) : (
         <Alert variant="info">
-          The association has not yet published its collection account details.
-          Please contact the office
-          {association.phone ? ` on ${association.phone}` : ""} for payment
-          instructions, and quote <strong>{reference}</strong>.
+          {copy.noAccountPublished}
+          {association.phone
+            ? ` ${fill(copy.noAccountPhone, { phone: association.phone })}`
+            : ""}{" "}
+          {copy.noAccountQuote} <strong>{reference}</strong>.
         </Alert>
       )}
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
         <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
           <Smartphone className="size-4 text-primary" aria-hidden="true" />
-          Mobile money
+          {copy.mobileMoney}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          When paying by mobile money, enter{" "}
-          <strong className="text-ink">{reference}</strong> in the reason or
-          reference field. Payments are collected from the association&rsquo;s bank
-          account and matched automatically — your balance normally updates within
-          15 minutes of the money arriving.
+          <strong className="text-ink">{reference}</strong> {copy.mobileMoneyBody}
         </p>
       </section>
 
@@ -108,24 +108,24 @@ export default async function DepositPage() {
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
           <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
             <Info className="size-4 text-primary" aria-hidden="true" />
-            Contribution rules
+            {copy.contributionRules}
           </h2>
 
           <dl className="mt-4 divide-y divide-border">
             <Row
-              label="Minimum deposit"
+              label={copy.minimumDeposit}
               value={formatMoney(rule.minimumDeposit.toFixed(2))}
             />
             {rule.monthlyContribution && (
               <Row
-                label="Expected monthly contribution"
+                label={copy.monthlyContribution}
                 value={formatMoney(rule.monthlyContribution.toFixed(2))}
               />
             )}
             {rule.contributionDueDay && (
               <Row
-                label="Due each month by"
-                value={`Day ${rule.contributionDueDay}`}
+                label={copy.dueEachMonth}
+                value={fill(copy.day, { day: rule.contributionDueDay })}
               />
             )}
           </dl>

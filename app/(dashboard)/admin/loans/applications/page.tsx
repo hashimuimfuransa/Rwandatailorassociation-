@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { add, toMoneyString } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoanApplicationReview } from "@/components/dashboard/LoanApplicationReview";
@@ -19,6 +20,8 @@ export default async function LoanApplicationsPage() {
 
   const associationId = resolveAssociationScope(context);
   const scope = associationId ? { associationId } : {};
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.applications;
 
   const [applications, pendingDisbursement] = await Promise.all([
     prisma.loanApplication.findMany({
@@ -102,11 +105,11 @@ export default async function LoanApplicationsPage() {
   if (applications.length === 0 && pendingDisbursement.length === 0) {
     return (
       <div>
-        <PageHeader title="Loan applications" />
+        <PageHeader title={copy.title} />
         <EmptyState
           icon={ClipboardList}
-          title="No applications waiting"
-          description="New loan applications and approved loans awaiting disbursement will appear here."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       </div>
     );
@@ -114,10 +117,7 @@ export default async function LoanApplicationsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Loan applications"
-        description="Review applications and disburse approved loans."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <LoanApplicationReview
         applications={applications.map((a) => {

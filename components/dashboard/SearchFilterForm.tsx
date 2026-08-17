@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getDashboardCopy } from "@/lib/i18n/server";
 
 /**
  * Filter bar for admin list screens.
@@ -25,12 +26,12 @@ export interface FilterSelect {
   width?: string;
 }
 
-export function SearchFilterForm({
+export async function SearchFilterForm({
   action,
   placeholder,
   search,
   selects = [],
-  searchLabel = "Search",
+  searchLabel,
   searchName = "q",
   showSearch = true,
 }: {
@@ -39,12 +40,17 @@ export function SearchFilterForm({
   placeholder?: string;
   search?: string;
   selects?: FilterSelect[];
+  /// Defaults to the translated word for "Search".
   searchLabel?: string;
   searchName?: string;
   /// False for screens filtered only by dropdown, so no dead text field is
   /// rendered for a form that has nothing to search.
   showSearch?: boolean;
 }) {
+  const { d } = await getDashboardCopy();
+  const copy = d.views.filters;
+  const label = searchLabel ?? copy.search;
+
   const hasFilters =
     Boolean(search) || selects.some((s) => s.value && s.value !== "ALL");
 
@@ -62,7 +68,7 @@ export function SearchFilterForm({
             htmlFor={inputId}
             className="mb-1.5 block text-xs font-semibold text-ink"
           >
-            {searchLabel}
+            {label}
           </label>
           <div className="relative">
             <Search
@@ -107,11 +113,11 @@ export function SearchFilterForm({
 
       <div className="flex gap-2">
         <Button type="submit" size="sm">
-          Apply
+          {copy.apply}
         </Button>
         {hasFilters && (
           <Button asChild variant="outline" size="sm">
-            <Link href={action}>Clear</Link>
+            <Link href={action}>{copy.clear}</Link>
           </Button>
         )}
       </div>

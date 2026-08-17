@@ -5,6 +5,7 @@ import { FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * Statement period picker.
@@ -20,6 +21,9 @@ export function StatementDownload({
   memberNumber: string;
   paymentReference: string;
 }) {
+  const { d } = useLanguage();
+  const copy = d.views.statement;
+
   const today = new Date().toISOString().slice(0, 10);
   const yearAgo = new Date(new Date().setMonth(new Date().getMonth() - 12))
     .toISOString()
@@ -40,7 +44,7 @@ export function StatementDownload({
       <dl className="mb-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-background p-3">
           <dt className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-            Membership number
+            {copy.membershipNumber}
           </dt>
           <dd className="mt-0.5 font-heading text-sm font-bold text-ink">
             {memberNumber}
@@ -48,7 +52,7 @@ export function StatementDownload({
         </div>
         <div className="rounded-xl border border-primary/25 bg-primary-50 p-3">
           <dt className="text-xs font-semibold uppercase tracking-wider text-primary-hover">
-            Payment reference
+            {copy.paymentReference}
           </dt>
           <dd className="mt-0.5 font-heading text-sm font-bold text-primary-hover">
             {paymentReference}
@@ -57,7 +61,7 @@ export function StatementDownload({
       </dl>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="stmt-from" label="From" required>
+        <Field id="stmt-from" label={copy.from} required>
           {(props) => (
             <Input
               {...props}
@@ -71,8 +75,8 @@ export function StatementDownload({
 
         <Field
           id="stmt-to"
-          label="To"
-          error={invalid ? "The end date must be after the start date" : undefined}
+          label={copy.to}
+          error={invalid ? copy.invalidRange : undefined}
           required
         >
           {(props) => (
@@ -91,7 +95,7 @@ export function StatementDownload({
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Button onClick={() => open("html")} disabled={invalid} className="flex-1">
           <FileText className="size-4" aria-hidden="true" />
-          Open printable statement (PDF)
+          {copy.openPrintable}
         </Button>
         <Button
           onClick={() => open("csv")}
@@ -100,7 +104,7 @@ export function StatementDownload({
           className="flex-1"
         >
           <FileSpreadsheet className="size-4" aria-hidden="true" />
-          Download CSV
+          {copy.downloadCsv}
         </Button>
       </div>
     </div>

@@ -3,6 +3,8 @@ import { Receipt } from "lucide-react";
 import { requireMember } from "@/lib/auth/guards";
 import { getMemberTransactions } from "@/lib/services/member-queries";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -48,6 +50,8 @@ export default async function MemberTransactionsPage({
 }) {
   const context = await requireMember("/dashboard/savings/transactions");
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.transactions;
 
   // Validate the type against the enum rather than passing it through — an
   // arbitrary query string must not reach Prisma as a filter value.
@@ -66,38 +70,39 @@ export default async function MemberTransactionsPage({
 
   return (
     <div>
-      <PageHeader
-        title="Transactions"
-        description="Every movement on your savings account, newest first."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <TransactionFilters basePath="/dashboard/savings/transactions" />
 
       <div className="mb-4 mt-5 grid gap-3 sm:grid-cols-3">
-        <SummaryTile label="Matching transactions" value={String(data.total)} />
-        <SummaryTile label="Total in" value={formatMoney(data.totalIn)} tone="in" />
-        <SummaryTile label="Total out" value={formatMoney(data.totalOut)} tone="out" />
+        <SummaryTile label={copy.matching} value={String(data.total)} />
+        <SummaryTile label={copy.totalIn} value={formatMoney(data.totalIn)} tone="in" />
+        <SummaryTile
+          label={copy.totalOut}
+          value={formatMoney(data.totalOut)}
+          tone="out"
+        />
       </div>
 
       {data.transactions.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No transactions found"
-          description="No transactions match these filters. Try widening the date range or clearing the search."
+          title={copy.noneFoundTitle}
+          description={copy.noneFoundBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Balance after</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
+                <TableHead>{d.common.description}</TableHead>
+                <TableHead>{d.common.type}</TableHead>
+                <TableHead>{d.common.method}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{copy.balanceAfter}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -112,11 +117,7 @@ export default async function MemberTransactionsPage({
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {new Date(t.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(t.createdAt, locale)}
                   </TableCell>
                   <TableCell className="max-w-xs text-sm">
                     {t.description ?? "—"}

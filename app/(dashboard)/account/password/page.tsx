@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 import { requireAuth } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
+import { formatDateTime } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Alert } from "@/components/ui/alert";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -19,6 +22,8 @@ export default async function AccountSecurityPage({
 }) {
   const context = await requireAuth("/account/password");
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.security;
 
   const [sessions, recentLogins] = await Promise.all([
     prisma.session.count({
@@ -42,15 +47,11 @@ export default async function AccountSecurityPage({
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader
-        title="Security & password"
-        description="Change your password and review recent sign-in activity."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {forced && (
-        <Alert variant="warning" title="You must change your password">
-          This account was created with a temporary password. Choose a new one
-          before continuing.
+        <Alert variant="warning" title={copy.forcedTitle}>
+          {copy.forcedBody}
         </Alert>
       )}
 
@@ -59,18 +60,16 @@ export default async function AccountSecurityPage({
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
         <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
           <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
-          Active sessions
+          {copy.activeSessions}
         </h2>
         <p className="mt-2 text-sm text-ink-muted">
-          You are signed in on <strong className="text-ink">{sessions}</strong>{" "}
-          device{sessions === 1 ? "" : "s"}. Changing your password signs out every
-          other device immediately.
+          {pluralize(copy.sessionsCount, sessions)} {copy.sessionsWarning}
         </p>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
         <h2 className="font-heading text-base font-semibold text-ink">
-          Recent sign-in activity
+          {copy.recentActivity}
         </h2>
 
         <ul className="mt-4 divide-y divide-border">
@@ -82,7 +81,7 @@ export default async function AccountSecurityPage({
                     entry.success ? "text-ink" : "text-red-600"
                   }`}
                 >
-                  {entry.success ? "Successful sign-in" : "Failed attempt"}
+                  {entry.success ? copy.successfulSignIn : copy.failedAttempt}
                   {!entry.success && entry.failureReason && (
                     <span className="ml-1 font-normal text-ink-muted">
                       ({entry.failureReason.toLowerCase().replace(/_/g, " ")})
@@ -90,26 +89,18 @@ export default async function AccountSecurityPage({
                   )}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-ink-muted">
-                  {entry.ipAddress ?? "unknown IP"}
+                  {entry.ipAddress ?? copy.unknownIp}
                   {entry.userAgent && ` · ${entry.userAgent.slice(0, 60)}`}
                 </p>
               </div>
               <time className="whitespace-nowrap text-xs text-ink-muted">
-                {entry.createdAt.toLocaleString("en-GB", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatDateTime(entry.createdAt, locale)}
               </time>
             </li>
           ))}
         </ul>
 
-        <p className="mt-4 text-xs leading-relaxed text-ink-muted">
-          If you see a sign-in you do not recognise, change your password
-          immediately and contact your association administrator.
-        </p>
+        <p className="mt-4 text-xs leading-relaxed text-ink-muted">{copy.warning}</p>
       </section>
     </div>
   );

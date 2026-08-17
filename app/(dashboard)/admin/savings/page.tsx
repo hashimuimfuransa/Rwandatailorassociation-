@@ -5,6 +5,9 @@ import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listSavingsAccounts } from "@/lib/services/admin-queries";
 import { formatMoney, isPositive, subtract } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -33,6 +36,8 @@ export default async function AdminSavingsPage({
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
   const search = params.q?.trim() || undefined;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.savings;
 
   const data = await listSavingsAccounts(associationId, {
     page: Number(params.page) || 1,
@@ -41,30 +46,27 @@ export default async function AdminSavingsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Savings accounts"
-        description="Every member savings account and the balance it holds."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={3}>
         <StatCard
-          label="Total held"
+          label={copy.totalHeld}
           value={formatMoney(data.totalBalance)}
-          hint={`${data.total} account${data.total === 1 ? "" : "s"}`}
+          hint={pluralize(copy.accountCount, data.total)}
           icon={PiggyBank}
           tone="primary"
         />
         <StatCard
-          label="Locked"
+          label={copy.locked}
           value={formatMoney(data.totalLocked)}
-          hint="Pledged against loans and pending withdrawals"
+          hint={copy.lockedHint}
           icon={Lock}
           tone={isPositive(data.totalLocked) ? "warning" : "default"}
         />
         <StatCard
-          label="Available"
+          label={copy.available}
           value={formatMoney(subtract(data.totalBalance, data.totalLocked))}
-          hint="Balance members could withdraw today"
+          hint={copy.availableHint}
           icon={Wallet}
           tone="success"
         />
@@ -72,33 +74,29 @@ export default async function AdminSavingsPage({
 
       <SearchFilterForm
         action="/admin/savings"
-        placeholder="Member name, number, payment reference or account number…"
+        placeholder={copy.searchPlaceholder}
         search={search}
       />
 
       {data.accounts.length === 0 ? (
         <EmptyState
           icon={PiggyBank}
-          title="No savings accounts found"
-          description={
-            search
-              ? "No accounts match this search. Try clearing it."
-              : "No savings accounts have been opened yet. One is created when a member is approved."
-          }
+          title={copy.noneTitle}
+          description={search ? copy.noneSearchBody : copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead align="right">Balance</TableHead>
-                <TableHead align="right">Locked</TableHead>
-                <TableHead align="right">Available</TableHead>
-                <TableHead align="right">Deposits</TableHead>
-                <TableHead align="right">Withdrawn</TableHead>
-                <TableHead>Last activity</TableHead>
+                <TableHead>{copy.colMember}</TableHead>
+                <TableHead>{copy.colAccount}</TableHead>
+                <TableHead align="right">{d.common.balance}</TableHead>
+                <TableHead align="right">{copy.colLocked}</TableHead>
+                <TableHead align="right">{copy.colAvailable}</TableHead>
+                <TableHead align="right">{copy.colDeposits}</TableHead>
+                <TableHead align="right">{copy.colWithdrawn}</TableHead>
+                <TableHead>{copy.colLastActivity}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,8 +118,7 @@ export default async function AdminSavingsPage({
                   <TableCell className="font-mono text-xs text-ink-muted">
                     {account.accountNumber}
                     <span className="mt-0.5 block text-[10px]">
-                      {account.transactionCount} transaction
-                      {account.transactionCount === 1 ? "" : "s"}
+                      {pluralize(copy.transactionCount, account.transactionCount)}
                     </span>
                   </TableCell>
 
@@ -169,13 +166,7 @@ export default async function AdminSavingsPage({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {account.lastTransactionAt
-                      ? account.lastTransactionAt.toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
+                    {formatDate(account.lastTransactionAt, locale)}
                   </TableCell>
                 </TableRow>
               ))}

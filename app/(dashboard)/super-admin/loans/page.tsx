@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listLoans } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { LoanPortfolioView } from "@/components/dashboard/LoanPortfolioView";
 import { parseLoanStatus, parsePage } from "@/lib/validation/filters";
@@ -15,6 +16,7 @@ export default async function PlatformLoansPage({
 }) {
   await requireSuperAdmin("/super-admin/loans");
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const search = params.q?.trim() || undefined;
   const status = parseLoanStatus(params.status);
@@ -28,8 +30,8 @@ export default async function PlatformLoansPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Loan portfolio"
-        description="Every loan on the platform, across all associations."
+        title={d.platform.loans.title}
+        description={d.platform.loans.description}
       />
       <LoanPortfolioView
         data={data}

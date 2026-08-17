@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { AlertTriangle, Banknote, HandCoins, TrendingUp } from "lucide-react";
 import { formatMoney, isPositive } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,19 +20,6 @@ import {
 } from "@/components/ui/table";
 import type { listLoans } from "@/lib/services/admin-queries";
 
-const STATUS_OPTIONS = [
-  { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "OVERDUE", label: "Overdue" },
-  { value: "DISBURSED", label: "Disbursed" },
-  { value: "PENDING_DISBURSEMENT", label: "Awaiting disbursement" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "DEFAULTED", label: "Defaulted" },
-  { value: "WRITTEN_OFF", label: "Written off" },
-  { value: "RESTRUCTURED", label: "Restructured" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
-
 /**
  * The loan book.
  *
@@ -37,7 +27,7 @@ const STATUS_OPTIONS = [
  * the portfolio total alone hides the only number that changes what an
  * administrator does today.
  */
-export function LoanPortfolioView({
+export async function LoanPortfolioView({
   data,
   basePath,
   search,
@@ -51,6 +41,23 @@ export function LoanPortfolioView({
   /// Where pending applications are reviewed, if this role reviews them.
   applicationsPath?: string;
 }) {
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.views.loans;
+
+  // Values are the LoanStatus enum; only the labels are translated.
+  const statusOptions = [
+    { value: "ALL", label: copy.allStatuses },
+    { value: "ACTIVE", label: copy.statusActive },
+    { value: "OVERDUE", label: copy.statusOverdue },
+    { value: "DISBURSED", label: copy.statusDisbursed },
+    { value: "PENDING_DISBURSEMENT", label: copy.statusPendingDisbursement },
+    { value: "COMPLETED", label: copy.statusCompleted },
+    { value: "DEFAULTED", label: copy.statusDefaulted },
+    { value: "WRITTEN_OFF", label: copy.statusWrittenOff },
+    { value: "RESTRUCTURED", label: copy.statusRestructured },
+    { value: "CANCELLED", label: copy.statusCancelled },
+  ];
+
   const { portfolio } = data;
   const hasArrears = portfolio.overdueCount > 0;
 
@@ -58,29 +65,29 @@ export function LoanPortfolioView({
     <>
       <StatGrid columns={4}>
         <StatCard
-          label="Outstanding"
+          label={copy.outstanding}
           value={formatMoney(portfolio.outstanding)}
-          hint={`${portfolio.openCount} open loan${portfolio.openCount === 1 ? "" : "s"}`}
+          hint={pluralize(copy.openLoans, portfolio.openCount)}
           icon={HandCoins}
           tone="primary"
         />
         <StatCard
-          label="In arrears"
+          label={copy.inArrears}
           value={formatMoney(portfolio.overdueAmount)}
-          hint={`${portfolio.overdueCount} overdue loan${portfolio.overdueCount === 1 ? "" : "s"}`}
+          hint={pluralize(copy.overdueLoans, portfolio.overdueCount)}
           icon={AlertTriangle}
           tone={hasArrears ? "danger" : "success"}
         />
         <StatCard
-          label="Total disbursed"
+          label={copy.totalDisbursed}
           value={formatMoney(portfolio.totalDisbursed)}
-          hint="Principal paid out to date"
+          hint={copy.disbursedHint}
           icon={Banknote}
         />
         <StatCard
-          label="Awaiting disbursement"
+          label={copy.awaitingDisbursement}
           value={String(data.statusCounts.PENDING_DISBURSEMENT ?? 0)}
-          hint="Approved but not yet paid out"
+          hint={copy.awaitingHint}
           icon={TrendingUp}
           href={applicationsPath}
         />
@@ -88,35 +95,36 @@ export function LoanPortfolioView({
 
       <SearchFilterForm
         action={basePath}
-        placeholder="Loan reference, member name or member number…"
+        placeholder={copy.searchPlaceholder}
         search={search}
         selects={[
-          { name: "status", label: "Status", value: status, options: STATUS_OPTIONS },
+          {
+            name: "status",
+            label: d.common.status,
+            value: status,
+            options: statusOptions,
+          },
         ]}
       />
 
       {data.loans.length === 0 ? (
         <EmptyState
           icon={HandCoins}
-          title="No loans found"
-          description={
-            search || status
-              ? "No loans match these filters. Try clearing them."
-              : "No loans have been disbursed yet. Approved applications appear here once disbursed."
-          }
+          title={copy.noneTitle}
+          description={search || status ? copy.noneFilteredBody : copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Loan</TableHead>
-                <TableHead>Member</TableHead>
-                <TableHead align="right">Principal</TableHead>
-                <TableHead align="right">Outstanding</TableHead>
-                <TableHead align="right">Repaid</TableHead>
-                <TableHead>Maturity</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.colLoan}</TableHead>
+                <TableHead>{copy.colMember}</TableHead>
+                <TableHead align="right">{copy.colPrincipal}</TableHead>
+                <TableHead align="right">{copy.colOutstanding}</TableHead>
+                <TableHead align="right">{copy.colRepaid}</TableHead>
+                <TableHead>{copy.colMaturity}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -127,7 +135,8 @@ export function LoanPortfolioView({
                       {loan.reference}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-ink-muted">
-                      {loan.productName} · {loan.interestRate}% · {loan.termMonths}mo
+                      {loan.productName} · {loan.interestRate}% ·{" "}
+                      {fill(copy.months, { count: loan.termMonths })}
                     </span>
                   </TableCell>
 
@@ -157,7 +166,11 @@ export function LoanPortfolioView({
                     })}
                     {isPositive(loan.overdueAmount) && (
                       <span className="mt-0.5 block text-[11px] font-semibold text-red-600">
-                        {formatMoney(loan.overdueAmount, { showSymbol: false })} overdue
+                        {fill(copy.overdueSuffix, {
+                          amount: formatMoney(loan.overdueAmount, {
+                            showSymbol: false,
+                          }),
+                        })}
                         {loan.daysOverdue > 0 && ` · ${loan.daysOverdue}d`}
                       </span>
                     )}
@@ -171,18 +184,12 @@ export function LoanPortfolioView({
                       })}
                     </span>
                     <span className="mt-1 block text-[11px] text-ink-muted">
-                      {loan.progressPercent}% repaid
+                      {fill(copy.repaidPercent, { percent: loan.progressPercent })}
                     </span>
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {loan.maturityDate
-                      ? loan.maturityDate.toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
+                    {formatDate(loan.maturityDate, locale)}
                   </TableCell>
 
                   <TableCell>

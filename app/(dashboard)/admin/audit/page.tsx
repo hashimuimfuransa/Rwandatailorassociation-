@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { AuditLogTable } from "@/components/dashboard/AuditLogTable";
 
@@ -15,12 +16,13 @@ export default async function AdminAuditPage({
   const context = await requirePermission(PERMISSIONS.AUDIT_VIEW, "/admin/audit");
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   return (
     <div>
       <PageHeader
-        title="Audit log"
-        description="Every consequential action taken in this association, with who did it and why."
+        title={d.admin.audit.title}
+        description={d.admin.audit.description}
       />
 
       <AuditLogTable

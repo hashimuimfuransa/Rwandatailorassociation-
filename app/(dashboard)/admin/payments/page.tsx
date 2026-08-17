@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listPayments } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { PaymentsView } from "@/components/dashboard/PaymentsView";
 import { parsePaymentStatus, parsePage } from "@/lib/validation/filters";
@@ -22,6 +23,7 @@ export default async function AdminPaymentsPage({
   const context = await requirePermission(PERMISSIONS.PAYMENTS_VIEW, "/admin/payments");
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const search = params.q?.trim() || undefined;
   const status = parsePaymentStatus(params.status);
@@ -37,8 +39,8 @@ export default async function AdminPaymentsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Payments"
-        description="Every payment the association has received from the provider."
+        title={d.admin.payments.title}
+        description={d.admin.payments.description}
       />
       <PaymentsView
         data={data}

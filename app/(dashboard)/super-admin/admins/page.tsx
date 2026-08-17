@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { KeyRound, Lock, ShieldCheck, Users } from "lucide-react";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listAdminUsers } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -22,21 +25,6 @@ import {
 export const metadata: Metadata = { title: "Administrators | RTA" };
 export const dynamic = "force-dynamic";
 
-const ROLE_OPTIONS = [
-  { value: "ALL", label: "All admin roles" },
-  { value: "ADMIN", label: "Association admin" },
-  { value: "SUPER_ADMIN", label: "Super admin" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "SUSPENDED", label: "Suspended" },
-  { value: "LOCKED", label: "Locked" },
-  { value: "DISABLED", label: "Disabled" },
-  { value: "PENDING_VERIFICATION", label: "Pending verification" },
-];
-
 export default async function PlatformAdminsPage({
   searchParams,
 }: {
@@ -48,6 +36,25 @@ export default async function PlatformAdminsPage({
   const search = params.q?.trim() || undefined;
   const role = parseUserRole(params.role);
   const status = parseUserStatus(params.status);
+
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.platform.admins;
+
+  // Values are the enums the database stores; only the labels are translated.
+  const roleOptions = [
+    { value: "ALL", label: copy.allRoles },
+    { value: "ADMIN", label: copy.associationAdmin },
+    { value: "SUPER_ADMIN", label: copy.superAdmin },
+  ];
+
+  const statusOptions = [
+    { value: "ALL", label: copy.allStatuses },
+    { value: "ACTIVE", label: copy.statusActive },
+    { value: "SUSPENDED", label: copy.statusSuspended },
+    { value: "LOCKED", label: copy.statusLocked },
+    { value: "DISABLED", label: copy.statusDisabled },
+    { value: "PENDING_VERIFICATION", label: copy.statusPending },
+  ];
 
   // null scope = every association, plus super admins who belong to none.
   const data = await listAdminUsers(null, {
@@ -63,37 +70,34 @@ export default async function PlatformAdminsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Administrators"
-        description="Everyone with administrative access, and what they can reach."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Administrators"
+          label={copy.count}
           value={String(data.total)}
-          hint="Matching this filter"
+          hint={copy.matchingFilter}
           icon={Users}
           tone="primary"
         />
         <StatCard
-          label="Active on this page"
+          label={copy.activeOnPage}
           value={String(active)}
-          hint="Able to sign in right now"
+          hint={copy.activeHint}
           icon={ShieldCheck}
           tone="success"
         />
         <StatCard
-          label="Locked out"
+          label={copy.lockedOut}
           value={String(locked)}
-          hint={locked > 0 ? "Failed sign-in lockout in force" : "No lockouts"}
+          hint={locked > 0 ? copy.lockoutInForce : copy.noLockouts}
           icon={Lock}
           tone={locked > 0 ? "warning" : "default"}
         />
         <StatCard
-          label="With overrides"
+          label={copy.withOverrides}
           value={String(withOverrides)}
-          hint="Permissions differ from their role"
+          hint={copy.overridesHint}
           icon={KeyRound}
           href="/super-admin/permissions"
         />
@@ -101,31 +105,36 @@ export default async function PlatformAdminsPage({
 
       <SearchFilterForm
         action="/super-admin/admins"
-        placeholder="Name, email or phone…"
+        placeholder={copy.searchPlaceholder}
         search={search}
         selects={[
-          { name: "role", label: "Role", value: role, options: ROLE_OPTIONS },
-          { name: "status", label: "Status", value: status, options: STATUS_OPTIONS },
+          { name: "role", label: copy.role, value: role, options: roleOptions },
+          {
+            name: "status",
+            label: d.common.status,
+            value: status,
+            options: statusOptions,
+          },
         ]}
       />
 
       {data.admins.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title="No administrators found"
-          description="No accounts match these filters. Try clearing them."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Administrator</TableHead>
-                <TableHead>Association</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Security</TableHead>
-                <TableHead>Last sign-in</TableHead>
+                <TableHead>{copy.colAdministrator}</TableHead>
+                <TableHead>{copy.colAssociation}</TableHead>
+                <TableHead>{copy.role}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
+                <TableHead>{copy.colSecurity}</TableHead>
+                <TableHead>{copy.colLastSignIn}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,7 +145,7 @@ export default async function PlatformAdminsPage({
                       {admin.fullName}
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-muted">
-                      {admin.email ?? admin.phone ?? "No contact on file"}
+                      {admin.email ?? admin.phone ?? copy.noContact}
                     </span>
                   </TableCell>
 
@@ -149,7 +158,7 @@ export default async function PlatformAdminsPage({
                         </span>
                       </>
                     ) : (
-                      <span className="text-ink-muted">Platform-wide</span>
+                      <span className="text-ink-muted">{copy.platformWide}</span>
                     )}
                   </TableCell>
 
@@ -161,35 +170,31 @@ export default async function PlatformAdminsPage({
                     <StatusBadge status={admin.status} size="sm" />
                     {admin.locked && (
                       <span className="mt-1 block text-[11px] font-semibold text-amber-700">
-                        locked out
+                        {copy.lockedLabel}
                       </span>
                     )}
                   </TableCell>
 
                   <TableCell className="text-xs text-ink-muted">
                     <span className="block">
-                      2FA {admin.twoFactorEnabled ? "on" : "off"}
+                      {admin.twoFactorEnabled ? copy.twoFactorOn : copy.twoFactorOff}
                     </span>
                     {admin.mustChangePassword && (
                       <span className="mt-0.5 block font-semibold text-amber-700">
-                        must change password
+                        {copy.mustChangePassword}
                       </span>
                     )}
                     {admin.overrideCount > 0 && (
                       <span className="mt-0.5 block">
-                        {admin.overrideCount} permission override(s)
+                        {pluralize(copy.overrideCount, admin.overrideCount)}
                       </span>
                     )}
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
                     {admin.lastLoginAt
-                      ? admin.lastLoginAt.toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "Never"}
+                      ? formatDate(admin.lastLoginAt, locale)
+                      : copy.never}
                   </TableCell>
                 </TableRow>
               ))}

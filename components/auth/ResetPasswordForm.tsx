@@ -9,12 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { useLanguage } from "@/components/LanguageProvider";
 import { assessPasswordStrength } from "@/lib/auth/password.shared";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
+
+  const { d } = useLanguage();
+  const copy = d.auth.reset;
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -37,7 +41,7 @@ export default function ResetPasswordForm() {
     setErrors({});
 
     if (password !== confirmPassword) {
-      setErrors({ confirmPassword: ["Passwords do not match"] });
+      setErrors({ confirmPassword: [copy.mismatch] });
       return;
     }
 
@@ -54,7 +58,7 @@ export default function ResetPasswordForm() {
 
       if (!response.ok) {
         if (payload?.error?.details) setErrors(payload.error.details);
-        setError(payload?.error?.message ?? "Could not reset your password.");
+        setError(payload?.error?.message ?? copy.failed);
         setSubmitting(false);
         return;
       }
@@ -63,7 +67,7 @@ export default function ResetPasswordForm() {
       // Give the confirmation a moment to be read before moving on.
       setTimeout(() => router.replace("/login"), 2500);
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(d.common.serverUnreachable);
       setSubmitting(false);
     }
   }
@@ -71,12 +75,12 @@ export default function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="mt-8">
-        <Alert variant="error" title="This link is not valid">
-          The reset link is missing or incomplete. Request a new one from the{" "}
+        <Alert variant="error" title={copy.invalidTitle}>
+          {copy.invalidBody}{" "}
           <Link href="/forgot-password" className="font-semibold underline">
-            forgot password
-          </Link>{" "}
-          page.
+            {copy.invalidLinkText}
+          </Link>
+          .
         </Alert>
       </div>
     );
@@ -85,9 +89,9 @@ export default function ResetPasswordForm() {
   if (done) {
     return (
       <div className="mt-8">
-        <Alert variant="success" title="Password changed">
+        <Alert variant="success" title={copy.doneTitle}>
           <span className="flex items-center gap-2">
-            Taking you to sign in…
+            {copy.doneBody}
             <CheckCircle2 className="size-4" aria-hidden="true" />
           </span>
         </Alert>
@@ -99,7 +103,7 @@ export default function ResetPasswordForm() {
     <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
 
-      <Field id="password" label="New password" error={errors.password} required>
+      <Field id="password" label={copy.newPassword} error={errors.password} required>
         {(props) => (
           <div className="relative">
             <Input
@@ -107,7 +111,7 @@ export default function ResetPasswordForm() {
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              placeholder="At least 10 characters"
+              placeholder={copy.newPasswordPlaceholder}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pr-12"
@@ -117,7 +121,9 @@ export default function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showPassword ? d.auth.login.hidePassword : d.auth.login.showPassword
+              }
               className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
             >
               {showPassword ? (
@@ -134,7 +140,7 @@ export default function ResetPasswordForm() {
 
       <Field
         id="confirmPassword"
-        label="Confirm new password"
+        label={copy.confirmPassword}
         error={errors.confirmPassword}
         required
       >
@@ -144,7 +150,7 @@ export default function ResetPasswordForm() {
             name="confirmPassword"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Re-enter your new password"
+            placeholder={copy.confirmPasswordPlaceholder}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
@@ -156,12 +162,12 @@ export default function ResetPasswordForm() {
         {submitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            Saving…
+            {copy.submitting}
           </>
         ) : (
           <>
             <KeyRound className="size-4" aria-hidden="true" />
-            Set new password
+            {copy.submit}
           </>
         )}
       </Button>

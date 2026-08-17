@@ -18,6 +18,9 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { resolveAssociationScope } from "@/lib/auth/guards";
 import { getAdminDashboard } from "@/lib/services/admin-dashboard";
 import { formatMoney, formatMoneyCompact } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -40,6 +43,9 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const context = await requireAdmin("/admin");
   const associationId = resolveAssociationScope(context);
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.overview;
+
   const data = await getAdminDashboard(associationId);
 
   const { members, savings, loans, payments, queues, charts, recentTransactions } = data;
@@ -47,8 +53,10 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        title={`${context.association?.name ?? "Platform"} overview`}
-        description="Today's position across savings, loans and payments."
+        title={fill(copy.title, {
+          association: context.association?.name ?? copy.platform,
+        })}
+        description={copy.description}
       />
 
       {/* Things that need a human, surfaced before the numbers. */}
@@ -61,8 +69,10 @@ export default async function AdminDashboardPage() {
               href="/admin/payments/unmatched"
               icon={Link2}
               tone="warning"
-              title={`${payments.unmatchedCount} unmatched payment${payments.unmatchedCount === 1 ? "" : "s"}`}
-              detail={`${formatMoney(payments.unmatchedAmount)} received but not yet credited to a member`}
+              title={pluralize(copy.unmatchedPayments, payments.unmatchedCount)}
+              detail={fill(copy.unmatchedDetail, {
+                amount: formatMoney(payments.unmatchedAmount),
+              })}
             />
           )}
           {loans.overdueCount > 0 && (
@@ -70,8 +80,10 @@ export default async function AdminDashboardPage() {
               href="/admin/loans?status=OVERDUE"
               icon={AlertTriangle}
               tone="danger"
-              title={`${loans.overdueCount} overdue loan${loans.overdueCount === 1 ? "" : "s"}`}
-              detail={`${formatMoney(loans.overdueAmount)} in arrears`}
+              title={pluralize(copy.overdueLoans, loans.overdueCount)}
+              detail={fill(copy.overdueDetail, {
+                amount: formatMoney(loans.overdueAmount),
+              })}
             />
           )}
           {queues.pendingMemberApprovals > 0 && (
@@ -79,20 +91,21 @@ export default async function AdminDashboardPage() {
               href="/admin/members/pending"
               icon={UserCheck}
               tone="info"
-              title={`${queues.pendingMemberApprovals} membership application${queues.pendingMemberApprovals === 1 ? "" : "s"}`}
-              detail="Awaiting your approval"
+              title={pluralize(
+                copy.membershipApplications,
+                queues.pendingMemberApprovals
+              )}
+              detail={copy.awaitingApproval}
             />
           )}
         </div>
       )}
 
       {payments.suspiciousCount > 0 && (
-        <Alert variant="error" title="Payments flagged as suspicious">
-          {payments.suspiciousCount} payment
-          {payments.suspiciousCount === 1 ? " has" : "s have"} been flagged and
-          held.{" "}
+        <Alert variant="error" title={copy.suspiciousTitle}>
+          {pluralize(copy.suspiciousBody, payments.suspiciousCount)}{" "}
           <Link href="/admin/payments?flag=suspicious" className="font-semibold underline">
-            Review them
+            {copy.reviewThem}
           </Link>
         </Alert>
       )}
@@ -100,34 +113,36 @@ export default async function AdminDashboardPage() {
       {/* Money */}
       <section>
         <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-ink-muted">
-          Association funds
+          {copy.funds}
         </h2>
         <StatGrid columns={4}>
           <StatCard
-            label="Total savings held"
+            label={copy.totalSavings}
             value={formatMoney(savings.totalBalance)}
-            hint={`${members.active} active members`}
+            hint={pluralize(copy.activeMembers, members.active)}
             icon={PiggyBank}
             tone="primary"
             href="/admin/savings"
           />
           <StatCard
-            label="Collected today"
+            label={copy.collectedToday}
             value={formatMoney(savings.depositsToday)}
-            hint={`${savings.transactionsToday} transaction${savings.transactionsToday === 1 ? "" : "s"}`}
+            hint={pluralize(copy.transactionsToday, savings.transactionsToday)}
             icon={Banknote}
             tone="success"
           />
           <StatCard
-            label="Collected this month"
+            label={copy.collectedThisMonth}
             value={formatMoney(savings.depositsThisMonth)}
-            hint={`Withdrawals ${formatMoneyCompact(savings.withdrawalsThisMonth)}`}
+            hint={fill(copy.withdrawalsHint, {
+              amount: formatMoneyCompact(savings.withdrawalsThisMonth),
+            })}
             icon={TrendingUp}
           />
           <StatCard
-            label="Outstanding loans"
+            label={copy.outstandingLoans}
             value={formatMoney(loans.outstanding)}
-            hint={`${loans.activeCount} active loan${loans.activeCount === 1 ? "" : "s"}`}
+            hint={pluralize(copy.activeLoans, loans.activeCount)}
             icon={HandCoins}
             tone={loans.overdueCount > 0 ? "warning" : "default"}
             href="/admin/loans"
@@ -138,19 +153,19 @@ export default async function AdminDashboardPage() {
       {/* Operations */}
       <section>
         <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-ink-muted">
-          Needs attention
+          {copy.needsAttention}
         </h2>
         <StatGrid columns={4}>
           <StatCard
-            label="Pending applications"
+            label={copy.pendingApplications}
             value={String(loans.pendingApplications)}
-            hint="Loan applications awaiting review"
+            hint={copy.pendingApplicationsHint}
             icon={ClipboardList}
             tone={loans.pendingApplications > 0 ? "warning" : "default"}
             href="/admin/loans/applications"
           />
           <StatCard
-            label="Pending withdrawals"
+            label={copy.pendingWithdrawals}
             value={String(queues.pendingWithdrawals)}
             hint={formatMoney(queues.pendingWithdrawalAmount)}
             icon={ArrowUpFromLine}
@@ -158,7 +173,7 @@ export default async function AdminDashboardPage() {
             href="/admin/withdrawals"
           />
           <StatCard
-            label="Unmatched payments"
+            label={copy.unmatchedCount}
             value={String(payments.unmatchedCount)}
             hint={formatMoney(payments.unmatchedAmount)}
             icon={CreditCard}
@@ -166,7 +181,7 @@ export default async function AdminDashboardPage() {
             href="/admin/payments/unmatched"
           />
           <StatCard
-            label="Overdue loans"
+            label={copy.overdueCount}
             value={String(loans.overdueCount)}
             hint={formatMoney(loans.overdueAmount)}
             icon={AlertTriangle}
@@ -179,26 +194,31 @@ export default async function AdminDashboardPage() {
       {/* Membership */}
       <section>
         <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-ink-muted">
-          Membership
+          {copy.membership}
         </h2>
         <StatGrid columns={4}>
           <StatCard
-            label="Total members"
+            label={copy.totalMembers}
             value={String(members.total)}
-            hint={`${members.joinedThisMonth} joined this month`}
+            hint={fill(copy.joinedThisMonth, { count: members.joinedThisMonth })}
             icon={Users}
             href="/admin/members"
           />
-          <StatCard label="Active" value={String(members.active)} icon={UserCheck} tone="success" />
           <StatCard
-            label="Pending approval"
+            label={copy.active}
+            value={String(members.active)}
+            icon={UserCheck}
+            tone="success"
+          />
+          <StatCard
+            label={copy.pendingApproval}
             value={String(members.pendingApproval)}
             icon={ClipboardList}
             tone={members.pendingApproval > 0 ? "warning" : "default"}
             href="/admin/members/pending"
           />
           <StatCard
-            label="Suspended"
+            label={copy.suspended}
             value={String(members.suspended)}
             icon={AlertTriangle}
             tone={members.suspended > 0 ? "warning" : "default"}
@@ -208,23 +228,32 @@ export default async function AdminDashboardPage() {
 
       {/* Charts */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <ChartCard title="Monthly deposits" description="Contributions received per month">
+        <ChartCard
+          title={copy.monthlyDeposits}
+          description={copy.monthlyDepositsHint}
+        >
           {charts.monthlyDeposits.length > 0 ? (
-            <MonthlyBarChart data={charts.monthlyDeposits} series="Deposits" />
+            <MonthlyBarChart
+              data={charts.monthlyDeposits}
+              series={copy.seriesDeposits}
+            />
           ) : (
-            <ChartPlaceholder />
+            <ChartPlaceholder message={copy.noData} />
           )}
         </ChartCard>
 
-        <ChartCard title="Monthly withdrawals" description="Paid out per month">
+        <ChartCard
+          title={copy.monthlyWithdrawals}
+          description={copy.monthlyWithdrawalsHint}
+        >
           {charts.monthlyWithdrawals.length > 0 ? (
             <MonthlyBarChart
               data={charts.monthlyWithdrawals}
-              series="Withdrawals"
+              series={copy.seriesWithdrawals}
               colour="#d4a94c"
             />
           ) : (
-            <ChartPlaceholder />
+            <ChartPlaceholder message={copy.noData} />
           )}
         </ChartCard>
       </div>
@@ -233,13 +262,13 @@ export default async function AdminDashboardPage() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold text-ink">
-            Latest transactions
+            {copy.latestTransactions}
           </h2>
           <Link
             href="/admin/savings/transactions"
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            View all
+            {d.common.viewAll}
             <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         </div>
@@ -248,19 +277,17 @@ export default async function AdminDashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Member</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.member}</TableHead>
+                <TableHead>{d.common.type}</TableHead>
+                <TableHead>{copy.colChannel}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentTransactions.length === 0 ? (
-                <TableEmpty colSpan={6}>
-                  No transactions recorded yet.
-                </TableEmpty>
+                <TableEmpty colSpan={6}>{copy.noTransactions}</TableEmpty>
               ) : (
                 recentTransactions.map((t) => (
                   <TableRow key={t.id}>
@@ -292,11 +319,7 @@ export default async function AdminDashboardPage() {
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {new Date(t.createdAt).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(t.createdAt, locale)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -363,10 +386,10 @@ function ChartCard({
   );
 }
 
-function ChartPlaceholder() {
+function ChartPlaceholder({ message }: { message: string }) {
   return (
     <div className="flex h-[240px] items-center justify-center rounded-xl border border-dashed border-border">
-      <p className="text-sm text-ink-muted">No data for this period yet.</p>
+      <p className="text-sm text-ink-muted">{message}</p>
     </div>
   );
 }

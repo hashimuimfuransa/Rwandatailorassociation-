@@ -4,6 +4,9 @@ import { AlertTriangle, Banknote, CalendarClock, HandCoins } from "lucide-react"
 import { requireMember } from "@/lib/auth/guards";
 import { getMemberRepayments } from "@/lib/services/member-queries";
 import { formatMoney, isPositive } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize, split } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -23,29 +26,28 @@ import {
 export const metadata: Metadata = { title: "Repayments | RTA" };
 export const dynamic = "force-dynamic";
 
-const DATE = { day: "numeric", month: "short", year: "numeric" } as const;
-
 export default async function MemberRepaymentsPage() {
   const context = await requireMember("/dashboard/loans/repayments");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.repayments;
+
   const data = await getMemberRepayments(context.member!.id);
+  const date = (value: Date) => formatDate(value, locale);
 
   if (data.loanCount === 0) {
     return (
       <div>
-        <PageHeader
-          title="Repayments"
-          description="Your repayment schedule and everything you have paid so far."
-        />
+        <PageHeader title={copy.title} description={copy.description} />
         <EmptyState
           icon={HandCoins}
-          title="You have no active loans"
-          description="Once a loan is disbursed to you, its repayment schedule will appear here."
+          title={copy.noLoansTitle}
+          description={copy.noLoansBody}
           action={
             <Link
               href="/dashboard/loans/apply"
               className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[13px] font-semibold text-white hover:bg-primary-hover"
             >
-              Apply for a loan
+              {copy.applyAction}
             </Link>
           }
         />
@@ -54,43 +56,40 @@ export default async function MemberRepaymentsPage() {
   }
 
   const inArrears = isPositive(data.arrears);
+  const [noteBefore, noteAfter] = split(copy.matchingNote, "reference");
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Repayments"
-        description="Your repayment schedule and everything you have paid so far."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {inArrears && (
-        <Alert variant="error" title="You have overdue repayments">
-          {formatMoney(data.arrears)} is past its due date. Penalties may continue
-          to accrue until it is settled.
+        <Alert variant="error" title={copy.arrearsTitle}>
+          {fill(copy.arrearsBody, { amount: formatMoney(data.arrears) })}
         </Alert>
       )}
 
       <StatGrid columns={3}>
         <StatCard
-          label="Total outstanding"
+          label={copy.totalOutstanding}
           value={formatMoney(data.totalOutstanding)}
-          hint={`Across ${data.loanCount} loan${data.loanCount === 1 ? "" : "s"}`}
+          hint={pluralize(copy.acrossLoans, data.loanCount)}
           icon={HandCoins}
           tone="primary"
         />
         <StatCard
-          label="Next instalment"
+          label={copy.nextInstalment}
           value={data.nextDue ? formatMoney(data.nextDue.remaining) : "—"}
           hint={
             data.nextDue
-              ? `Due ${data.nextDue.dueDate.toLocaleDateString("en-GB", DATE)}`
-              : "Nothing scheduled"
+              ? fill(copy.dueOn, { date: date(data.nextDue.dueDate) })
+              : copy.nothingScheduled
           }
           icon={CalendarClock}
         />
         <StatCard
-          label="In arrears"
+          label={copy.inArrears}
           value={formatMoney(data.arrears)}
-          hint={inArrears ? "Settle as soon as possible" : "You are up to date"}
+          hint={inArrears ? copy.settleSoon : copy.upToDate}
           icon={AlertTriangle}
           tone={inArrears ? "danger" : "success"}
         />
@@ -98,27 +97,24 @@ export default async function MemberRepaymentsPage() {
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Repayment schedule
+          {copy.schedule}
         </h2>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
-                <TableHead>Loan</TableHead>
-                <TableHead>Due date</TableHead>
-                <TableHead align="right">Instalment</TableHead>
-                <TableHead align="right">Paid</TableHead>
-                <TableHead align="right">Remaining</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.loan}</TableHead>
+                <TableHead>{d.member.loans.dueDate}</TableHead>
+                <TableHead align="right">{copy.instalment}</TableHead>
+                <TableHead align="right">{d.member.loans.paid}</TableHead>
+                <TableHead align="right">{d.member.loans.remaining}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.schedule.length === 0 ? (
-                <TableEmpty colSpan={7}>
-                  No schedule has been generated yet. It is created when the loan
-                  is disbursed.
-                </TableEmpty>
+                <TableEmpty colSpan={7}>{copy.noSchedule}</TableEmpty>
               ) : (
                 data.schedule.map((instalment) => (
                   <TableRow key={instalment.id}>
@@ -134,11 +130,12 @@ export default async function MemberRepaymentsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {instalment.dueDate.toLocaleDateString("en-GB", DATE)}
+                      {date(instalment.dueDate)}
                       {instalment.daysOverdue > 0 && (
                         <span className="mt-0.5 block text-[11px] font-semibold text-red-600">
-                          {instalment.daysOverdue} day
-                          {instalment.daysOverdue === 1 ? "" : "s"} late
+                          {pluralize(copy.daysLate, instalment.daysOverdue, {
+                            days: instalment.daysOverdue,
+                          })}
                         </span>
                       )}
                     </TableCell>
@@ -164,27 +161,25 @@ export default async function MemberRepaymentsPage() {
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Repayments received
+          {copy.received}
         </h2>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Loan</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Principal</TableHead>
-                <TableHead align="right">Interest</TableHead>
-                <TableHead align="right">Penalty</TableHead>
-                <TableHead align="right">Balance after</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
+                <TableHead>{copy.loan}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{d.member.loans.principal}</TableHead>
+                <TableHead align="right">{d.member.loans.interest}</TableHead>
+                <TableHead align="right">{copy.penalty}</TableHead>
+                <TableHead align="right">{copy.balanceAfter}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.history.length === 0 ? (
-                <TableEmpty colSpan={8}>
-                  No repayments have been posted yet.
-                </TableEmpty>
+                <TableEmpty colSpan={8}>{copy.noneReceived}</TableEmpty>
               ) : (
                 data.history.map((payment) => (
                   <TableRow key={payment.id}>
@@ -192,7 +187,7 @@ export default async function MemberRepaymentsPage() {
                       {payment.reference}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {payment.createdAt.toLocaleDateString("en-GB", DATE)}
+                      {date(payment.createdAt)}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-ink-muted">
                       {payment.loanReference}
@@ -223,12 +218,11 @@ export default async function MemberRepaymentsPage() {
       <p className="flex items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-sm text-ink-muted">
         <Banknote className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>
-          Repayments are matched automatically when you pay using your payment
-          reference{" "}
+          {noteBefore}
           <strong className="font-mono text-ink">
             {context.member!.paymentReference}
           </strong>
-          . Allow up to one working day for a payment to appear here.
+          {noteAfter}
         </span>
       </p>
     </div>

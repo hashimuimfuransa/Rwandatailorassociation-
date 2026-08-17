@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
+import { useLanguage } from "@/components/LanguageProvider";
+import { pluralize } from "@/lib/i18n/fill";
 import { cn } from "@/lib/utils";
 
 /**
@@ -68,16 +70,24 @@ function ConfirmDialogBody({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   tone = "default",
   requireReason = false,
-  reasonLabel = "Reason",
-  reasonPlaceholder = "Explain why this action is being taken…",
+  reasonLabel,
+  reasonPlaceholder,
   reasonMinLength = 5,
   children,
   onConfirm,
 }: ConfirmDialogProps) {
+  const { d } = useLanguage();
+  const copy = d.views.confirm;
+
+  const confirmText = confirmLabel ?? d.common.confirm;
+  const cancelText = cancelLabel ?? d.common.cancel;
+  const reasonText = reasonLabel ?? copy.reason;
+  const reasonHint = reasonPlaceholder ?? copy.reasonPlaceholder;
+
   const [reason, setReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -88,7 +98,7 @@ function ConfirmDialogBody({
 
   async function handleConfirm() {
     if (!reasonValid) {
-      setError(`Please give a reason of at least ${reasonMinLength} characters.`);
+      setError(pluralize(copy.reasonTooShort, reasonMinLength));
       return;
     }
 
@@ -100,7 +110,7 @@ function ConfirmDialogBody({
       onOpenChange(false);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "The action could not be completed."
+        caught instanceof Error ? caught.message : copy.actionFailed
       );
       setSubmitting(false);
     }
@@ -131,22 +141,22 @@ function ConfirmDialogBody({
         {requireReason && (
           <div className="space-y-2">
             <Label htmlFor="confirm-reason" required>
-              {reasonLabel}
+              {reasonText}
             </Label>
             <Textarea
               id="confirm-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder={reasonPlaceholder}
+              placeholder={reasonHint}
               invalid={Boolean(error) && !reasonValid}
               rows={3}
               disabled={submitting}
             />
             <p className="text-xs text-ink-muted">
               {remaining > 0
-                ? `${remaining} more character${remaining === 1 ? "" : "s"} needed. `
+                ? `${pluralize(copy.charactersNeeded, remaining)} `
                 : ""}
-              This is recorded permanently in the audit log against your name.
+              {copy.auditNote}
             </p>
           </div>
         )}
@@ -159,7 +169,7 @@ function ConfirmDialogBody({
             onClick={() => onOpenChange(false)}
             disabled={submitting}
           >
-            {cancelLabel}
+            {cancelText}
           </Button>
           <Button
             onClick={handleConfirm}
@@ -171,10 +181,10 @@ function ConfirmDialogBody({
             {submitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Working…
+                {copy.working}
               </>
             ) : (
-              confirmLabel
+              confirmText
             )}
           </Button>
       </div>

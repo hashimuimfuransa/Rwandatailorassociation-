@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Clock, LogOut } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/session";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ROLE_HOME } from "@/lib/auth/permissions";
@@ -34,6 +36,9 @@ export default async function PendingApprovalPage() {
     redirect(ROLE_HOME[context.user.role]);
   }
 
+  const { d } = await getDashboardCopy();
+  const copy = d.auth.pendingApproval;
+
   return (
     <div>
       <span className="flex size-14 items-center justify-center rounded-2xl bg-gold/15 text-amber-700">
@@ -41,18 +46,16 @@ export default async function PendingApprovalPage() {
       </span>
 
       <h1 className="mt-6 font-heading text-3xl font-bold text-ink">
-        Your membership is being reviewed
+        {copy.title}
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
-        Thank you, {context.user.firstName}. An administrator is reviewing your
-        application. You will be notified by SMS and email as soon as your
-        account is active.
+        {fill(copy.body, { name: context.user.firstName })}
       </p>
 
       <dl className="mt-8 space-y-3">
         <div className="rounded-xl border border-border bg-surface p-4">
           <dt className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-            Membership number
+            {copy.membershipNumber}
           </dt>
           <dd className="mt-1 font-heading text-lg font-bold text-ink">
             {context.member.memberNumber}
@@ -61,7 +64,7 @@ export default async function PendingApprovalPage() {
 
         <div className="rounded-xl border border-primary/25 bg-primary-50 p-4">
           <dt className="text-xs font-semibold uppercase tracking-wider text-primary-hover">
-            Your payment reference
+            {copy.paymentReference}
           </dt>
           <dd className="mt-1 font-heading text-lg font-bold text-primary-hover">
             {context.member.paymentReference}
@@ -70,15 +73,14 @@ export default async function PendingApprovalPage() {
       </dl>
 
       <Alert variant="info" className="mt-6">
-        Keep your payment reference safe. Once your membership is active, quote
-        it on every contribution so it reaches your savings account.
+        {copy.keepReference}
       </Alert>
 
       <form action="/api/auth/logout" method="post" className="mt-8">
         <Button asChild variant="outline" className="w-full">
           <Link href="/">
             <LogOut className="size-4" aria-hidden="true" />
-            Back to the website
+            {copy.backToWebsite}
           </Link>
         </Button>
       </form>

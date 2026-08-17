@@ -16,6 +16,9 @@ import { prisma } from "@/lib/db/prisma";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { getAdminDashboard } from "@/lib/services/admin-dashboard";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate, formatDateTime } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -62,6 +65,8 @@ async function countRecentJobFailures(): Promise<number> {
  */
 export default async function SuperAdminPage() {
   await requireSuperAdmin("/super-admin");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.platform.overview;
 
   // Platform-wide: null scope means no association filter.
   const [platform, associations, recentJobs, failedJobs, suspicious, admins, integrityFailures] =
@@ -123,74 +128,70 @@ export default async function SuperAdminPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader
-        title="Platform overview"
-        description="Everything across every association on the platform."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {/* System health first — this is what a super admin is here for. */}
       {env.JENGA_MODE === "sandbox" && (
-        <Alert variant="warning" title="Payment provider is in SANDBOX mode">
-          Transactions are fabricated by the mock adapter and must not back real
-          member balances. Set <code>JENGA_MODE=live</code> with real credentials
-          before go-live.
+        <Alert variant="warning" title={copy.sandboxTitle}>
+          {copy.sandboxBody}
         </Alert>
       )}
 
       {integrityFailures && integrityFailures.itemsFailed > 0 && (
-        <Alert variant="error" title="Ledger integrity failures detected">
-          The last integrity sweep found{" "}
-          <strong>{integrityFailures.itemsFailed}</strong> savings account(s)
-          whose cached balance does not match their transaction history.
-          Investigate immediately — this indicates a bug or direct database
-          modification.
+        <Alert variant="error" title={copy.integrityTitle}>
+          {pluralize(copy.integrityBody, integrityFailures.itemsFailed)}
         </Alert>
       )}
 
       {stalledJobs.length > 0 && (
-        <Alert variant="error" title="Background jobs are failing">
-          {stalledJobs.map((j) => j.jobName).join(", ")} last failed. While
-          reconciliation is down, member payments are not being credited.
+        <Alert variant="error" title={copy.stalledJobsTitle}>
+          {fill(copy.stalledJobsBody, {
+            jobs: stalledJobs.map((j) => j.jobName).join(", "),
+          })}
         </Alert>
       )}
 
       {suspicious > 0 && (
-        <Alert variant="warning" title="Suspicious payments held">
-          {suspicious} payment{suspicious === 1 ? " has" : "s have"} been flagged
-          and withheld from crediting.
+        <Alert variant="warning" title={copy.suspiciousTitle}>
+          {pluralize(copy.suspiciousBody, suspicious)}
         </Alert>
       )}
 
       {/* Platform financials */}
       <section>
         <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-ink-muted">
-          Platform financials
+          {copy.financials}
         </h2>
         <StatGrid columns={4}>
           <StatCard
-            label="Total savings held"
+            label={copy.totalSavings}
             value={formatMoney(totalSavings)}
-            hint={`${platform.members.total} members across ${associations.length} association${associations.length === 1 ? "" : "s"}`}
+            hint={pluralize(copy.membersAcross, associations.length, {
+              members: platform.members.total,
+            })}
             icon={PiggyBank}
             tone="primary"
           />
           <StatCard
-            label="Loans outstanding"
+            label={copy.loansOutstanding}
             value={formatMoney(platform.loans.outstanding)}
-            hint={`${platform.loans.activeCount} active`}
+            hint={fill(copy.activeCount, { count: platform.loans.activeCount })}
             icon={HandCoins}
           />
           <StatCard
-            label="In arrears"
+            label={copy.inArrears}
             value={formatMoney(platform.loans.overdueAmount)}
-            hint={`${platform.loans.overdueCount} overdue loan(s)`}
+            hint={pluralize(copy.overdueLoans, platform.loans.overdueCount)}
             icon={AlertTriangle}
             tone={platform.loans.overdueCount > 0 ? "danger" : "success"}
           />
           <StatCard
-            label="Collected today"
+            label={copy.collectedToday}
             value={formatMoney(platform.savings.depositsToday)}
-            hint={`${platform.savings.transactionsToday} transactions`}
+            hint={pluralize(
+              copy.transactionsToday,
+              platform.savings.transactionsToday
+            )}
             icon={CreditCard}
             tone="success"
           />
@@ -200,35 +201,35 @@ export default async function SuperAdminPage() {
       {/* Operational health */}
       <section>
         <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-ink-muted">
-          System health
+          {copy.systemHealth}
         </h2>
         <StatGrid columns={4}>
           <StatCard
-            label="Unmatched payments"
+            label={copy.unmatchedPayments}
             value={String(platform.payments.unmatchedCount)}
             hint={formatMoney(platform.payments.unmatchedAmount)}
             icon={Link2}
             tone={platform.payments.unmatchedCount > 0 ? "warning" : "success"}
           />
           <StatCard
-            label="Failed payments"
+            label={copy.failedPayments}
             value={String(platform.payments.failedCount)}
-            hint="Rejected at verification"
+            hint={copy.rejectedAtVerification}
             icon={AlertTriangle}
             tone={platform.payments.failedCount > 0 ? "warning" : "success"}
           />
           <StatCard
-            label="Job failures (24h)"
+            label={copy.jobFailures}
             value={String(failedJobs)}
-            hint="Background job runs"
+            hint={copy.jobRunsHint}
             icon={Activity}
             tone={failedJobs > 0 ? "danger" : "success"}
             href="/super-admin/jobs"
           />
           <StatCard
-            label="Active administrators"
+            label={copy.activeAdministrators}
             value={String(admins)}
-            hint="Admins and super admins"
+            hint={copy.adminsHint}
             icon={ShieldCheck}
             href="/super-admin/admins"
           />
@@ -238,12 +239,14 @@ export default async function SuperAdminPage() {
       {/* Associations */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold text-ink">Associations</h2>
+          <h2 className="font-heading text-lg font-semibold text-ink">
+            {copy.associations}
+          </h2>
           <Link
             href="/super-admin/associations"
             className="text-sm font-semibold text-primary hover:underline"
           >
-            Manage
+            {copy.manage}
           </Link>
         </div>
 
@@ -251,13 +254,13 @@ export default async function SuperAdminPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Association</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead align="right">Members</TableHead>
-                <TableHead align="right">Loans</TableHead>
-                <TableHead>Currency</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>{copy.colAssociation}</TableHead>
+                <TableHead>{copy.colCode}</TableHead>
+                <TableHead align="right">{copy.colMembers}</TableHead>
+                <TableHead align="right">{copy.colLoans}</TableHead>
+                <TableHead>{copy.colCurrency}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
+                <TableHead>{copy.colCreated}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -282,11 +285,7 @@ export default async function SuperAdminPage() {
                     <StatusBadge status={association.status} size="sm" />
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {association.createdAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(association.createdAt, locale)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -299,13 +298,13 @@ export default async function SuperAdminPage() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold text-ink">
-            Recent background jobs
+            {copy.recentJobs}
           </h2>
           <Link
             href="/super-admin/jobs"
             className="text-sm font-semibold text-primary hover:underline"
           >
-            View all
+            {d.common.viewAll}
           </Link>
         </div>
 
@@ -313,31 +312,23 @@ export default async function SuperAdminPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Job</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead align="right">Processed</TableHead>
-                <TableHead align="right">Failed</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.colJob}</TableHead>
+                <TableHead>{copy.colStarted}</TableHead>
+                <TableHead>{copy.colDuration}</TableHead>
+                <TableHead align="right">{copy.colProcessed}</TableHead>
+                <TableHead align="right">{copy.colFailed}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentJobs.length === 0 ? (
-                <TableEmpty colSpan={6}>
-                  No background jobs have run yet. Start the worker with{" "}
-                  <code className="font-mono">npm run worker</code>.
-                </TableEmpty>
+                <TableEmpty colSpan={6}>{copy.noJobs}</TableEmpty>
               ) : (
                 recentJobs.map((job) => (
                   <TableRow key={job.id}>
                     <TableCell className="font-medium text-ink">{job.jobName}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {job.startedAt.toLocaleString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatDateTime(job.startedAt, locale)}
                     </TableCell>
                     <TableCell className="text-sm text-ink-muted">
                       {job.durationMs ? `${(job.durationMs / 1000).toFixed(1)}s` : "—"}
@@ -370,20 +361,20 @@ export default async function SuperAdminPage() {
         <QuickLink
           href="/super-admin/audit"
           icon={Activity}
-          title="Audit log"
-          detail="Every consequential action, platform-wide"
+          title={copy.quickAuditTitle}
+          detail={copy.quickAuditDetail}
         />
         <QuickLink
           href="/super-admin/associations"
           icon={Building2}
-          title="Associations"
-          detail="Create and configure tenants"
+          title={copy.quickAssociationsTitle}
+          detail={copy.quickAssociationsDetail}
         />
         <QuickLink
           href="/super-admin/admins"
           icon={Users}
-          title="Administrators"
-          detail="Manage admin accounts and permissions"
+          title={copy.quickAdminsTitle}
+          detail={copy.quickAdminsDetail}
         />
       </section>
     </div>
@@ -416,4 +407,3 @@ function QuickLink({
     </Link>
   );
 }
-

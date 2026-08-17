@@ -11,14 +11,19 @@ const LANGUAGES: { code: Locale; label: string; short: string }[] = [
 ];
 
 /**
- * Language switch for the dashboard header.
+ * Language switch.
  *
  * A two-state segmented control rather than the dropdown the marketing site
  * uses: with exactly two languages a menu costs an extra click to show one
  * option, and the current language is not visible until it is opened.
  *
- * The choice is stored in localStorage by the provider, so it survives a
- * reload and follows the member between the public site and their dashboard.
+ * Lives in ui/ rather than dashboard/ because the sign-in page needs it too —
+ * a member who cannot read the sign-in page has no way to reach the Kinyarwanda
+ * dashboard behind it.
+ *
+ * The choice is stored by the provider in a cookie and in localStorage, so it
+ * survives a reload, follows the member between the public site and their
+ * dashboard, and is visible to the server-rendered pages.
  */
 export function LanguageToggle({ className }: { className?: string }) {
   const { locale, setLocale, d } = useLanguage();

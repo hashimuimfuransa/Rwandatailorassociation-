@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Info } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * The member's payment reference, given prominence on the dashboard.
@@ -13,6 +14,8 @@ import { Check, Copy, Info } from "lucide-react";
  * easy to find and copy directly reduces that queue.
  */
 export function PaymentReferenceCard({ reference }: { reference: string }) {
+  const { d } = useLanguage();
+  const copyText = d.views.paymentCard;
   const [copied, setCopied] = useState(false);
 
   function copy() {
@@ -25,7 +28,7 @@ export function PaymentReferenceCard({ reference }: { reference: string }) {
   return (
     <div className="rounded-2xl border border-primary/25 bg-primary-50 p-5">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary-hover">
-        Your payment reference
+        {copyText.label}
       </p>
 
       <div className="mt-2 flex items-center gap-2">
@@ -35,7 +38,7 @@ export function PaymentReferenceCard({ reference }: { reference: string }) {
         <button
           type="button"
           onClick={copy}
-          aria-label="Copy payment reference"
+          aria-label={copyText.copy}
           className="rounded-lg p-1.5 text-primary transition-colors hover:bg-primary/10"
         >
           {copied ? (
@@ -48,8 +51,7 @@ export function PaymentReferenceCard({ reference }: { reference: string }) {
 
       <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-primary-hover/80">
         <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        Quote this on every payment you make. Without it your contribution
-        cannot be matched to your account automatically.
+        {copyText.note}
       </p>
     </div>
   );

@@ -7,6 +7,8 @@ import {
   getMemberWithdrawals,
 } from "@/lib/services/member-queries";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -27,6 +29,8 @@ export const dynamic = "force-dynamic";
 
 export default async function WithdrawalsPage() {
   const context = await requireMember("/dashboard/withdrawals");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.withdrawals;
 
   const [account, withdrawals, rule] = await Promise.all([
     getMemberSavingsAccount(context.member!.id),
@@ -38,15 +42,11 @@ export default async function WithdrawalsPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader
-        title="Withdrawals"
-        description="Request money from your savings and track approval."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {rule && !rule.allowWithdrawals ? (
-        <Alert variant="warning" title="Withdrawals are not currently available">
-          The association has suspended withdrawals. Please contact the office if
-          you need assistance.
+        <Alert variant="warning" title={copy.suspendedTitle}>
+          {copy.suspendedBody}
         </Alert>
       ) : (
         account && (
@@ -65,26 +65,24 @@ export default async function WithdrawalsPage() {
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Your requests
+          {copy.yourRequests}
         </h2>
 
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Requested</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Fee</TableHead>
-                <TableHead align="right">You receive</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{copy.requested}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{copy.fee}</TableHead>
+                <TableHead align="right">{copy.youReceive}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {withdrawals.length === 0 ? (
-                <TableEmpty colSpan={6}>
-                  You have not requested any withdrawals.
-                </TableEmpty>
+                <TableEmpty colSpan={6}>{copy.noneYet}</TableEmpty>
               ) : (
                 withdrawals.map((w) => (
                   <TableRow key={w.id}>
@@ -92,11 +90,7 @@ export default async function WithdrawalsPage() {
                       {w.reference}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {new Date(w.requestedAt).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(w.requestedAt, locale)}
                     </TableCell>
                     <TableCell align="right" tabular>
                       {formatMoney(w.amount, { showSymbol: false })}
@@ -126,8 +120,7 @@ export default async function WithdrawalsPage() {
       {withdrawals.length === 0 && (
         <p className="flex items-start gap-2 text-sm text-ink-muted">
           <ArrowUpFromLine className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          Withdrawals are reviewed by the association before payout. Money leaves
-          your balance only once the payout has actually been made.
+          {copy.reviewNote}
         </p>
       )}
     </div>

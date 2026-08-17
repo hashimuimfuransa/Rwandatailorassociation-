@@ -1,4 +1,6 @@
 import { prisma, Prisma } from "@/lib/db/prisma";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { formatDateTime } from "@/lib/i18n/dates";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { PaginationLinks } from "@/components/dashboard/PaginationLinks";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -47,6 +49,9 @@ export async function AuditLogTable({
   action?: string;
   actorId?: string;
 }) {
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.views.audit;
+
   const where: Prisma.AuditLogWhereInput = {
     ...(associationId ? { associationId } : {}),
     ...(action ? { action } : {}),
@@ -81,8 +86,8 @@ export async function AuditLogTable({
     return (
       <EmptyState
         icon={Activity}
-        title="No audit entries"
-        description="Consequential actions — approvals, adjustments, reversals, permission changes — are recorded here as they happen."
+        title={copy.noneTitle}
+        description={copy.noneBody}
       />
     );
   }
@@ -92,12 +97,12 @@ export async function AuditLogTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>When</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Actor</TableHead>
-            <TableHead>Entity</TableHead>
-            <TableHead>Change</TableHead>
-            <TableHead>Severity</TableHead>
+            <TableHead>{copy.colWhen}</TableHead>
+            <TableHead>{copy.colAction}</TableHead>
+            <TableHead>{copy.colActor}</TableHead>
+            <TableHead>{copy.colEntity}</TableHead>
+            <TableHead>{copy.colChange}</TableHead>
+            <TableHead>{copy.colSeverity}</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -108,13 +113,7 @@ export async function AuditLogTable({
               className={entry.severity === "CRITICAL" ? "bg-red-50/40" : undefined}
             >
               <TableCell className="whitespace-nowrap text-xs text-ink-muted">
-                {entry.createdAt.toLocaleString("en-GB", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatDateTime(entry.createdAt, locale)}
                 {entry.ipAddress && (
                   <span className="mt-0.5 block font-mono text-[10px]">
                     {entry.ipAddress}
@@ -130,7 +129,9 @@ export async function AuditLogTable({
 
               <TableCell className="text-sm">
                 <span className="block text-ink">
-                  {entry.actorEmail ?? <em className="text-ink-muted">system</em>}
+                  {entry.actorEmail ?? (
+                    <em className="text-ink-muted">{copy.system}</em>
+                  )}
                 </span>
                 {entry.actorRole && (
                   <span className="block text-xs text-ink-muted">
@@ -154,7 +155,7 @@ export async function AuditLogTable({
                 )}
                 {(entry.oldValue || entry.newValue) && (
                   <p className="mt-0.5 line-clamp-2 font-mono text-[10px] leading-relaxed text-ink-muted">
-                    {summarise(entry.oldValue, entry.newValue)}
+                    {summarise(entry.oldValue, entry.newValue, copy.removed)}
                   </p>
                 )}
               </TableCell>
@@ -187,7 +188,11 @@ export async function AuditLogTable({
  * Only the fields that actually changed are shown — dumping whole objects into
  * a table cell makes the log unreadable and hides the one field that matters.
  */
-function summarise(oldValue: unknown, newValue: unknown): string {
+function summarise(
+  oldValue: unknown,
+  newValue: unknown,
+  removedLabel: string
+): string {
   const before = (oldValue ?? {}) as Record<string, unknown>;
   const after = (newValue ?? {}) as Record<string, unknown>;
 
@@ -200,7 +205,7 @@ function summarise(oldValue: unknown, newValue: unknown): string {
       const from = before[key];
       const to = after[key];
       if (from === undefined) return `${key}: ${String(to)}`;
-      if (to === undefined) return `${key}: (removed)`;
+      if (to === undefined) return `${key}: ${removedLabel}`;
       return `${key}: ${String(from)} → ${String(to)}`;
     });
 

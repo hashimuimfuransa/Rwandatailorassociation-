@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AlertTriangle, CreditCard, Link2, ShieldAlert } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,24 +19,6 @@ import {
 } from "@/components/ui/table";
 import type { listPayments } from "@/lib/services/admin-queries";
 
-const STATUS_OPTIONS = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PROCESSED", label: "Processed" },
-  { value: "MATCHED", label: "Matched" },
-  { value: "VERIFIED", label: "Verified" },
-  { value: "RECEIVED", label: "Received" },
-  { value: "PENDING", label: "Pending" },
-  { value: "UNMATCHED", label: "Unmatched" },
-  { value: "FAILED", label: "Failed" },
-  { value: "DUPLICATE", label: "Duplicate" },
-  { value: "REJECTED", label: "Rejected" },
-];
-
-const FLAG_OPTIONS = [
-  { value: "ALL", label: "All payments" },
-  { value: "1", label: "Suspicious only" },
-];
-
 /**
  * Inbound provider payments.
  *
@@ -43,7 +27,7 @@ const FLAG_OPTIONS = [
  * (`payments.match_manual`) — this one answers "what has arrived, and did it
  * land?" without offering a way to change the answer.
  */
-export function PaymentsView({
+export async function PaymentsView({
   data,
   basePath,
   search,
@@ -59,6 +43,28 @@ export function PaymentsView({
   /// Where the unmatched queue lives, if this role has one.
   unmatchedPath?: string;
 }) {
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.views.payments;
+
+  // Values are the PaymentStatus enum; only the labels are translated.
+  const statusOptions = [
+    { value: "ALL", label: copy.allStatuses },
+    { value: "PROCESSED", label: copy.statusProcessed },
+    { value: "MATCHED", label: copy.statusMatched },
+    { value: "VERIFIED", label: copy.statusVerified },
+    { value: "RECEIVED", label: copy.statusReceived },
+    { value: "PENDING", label: copy.statusPending },
+    { value: "UNMATCHED", label: copy.statusUnmatched },
+    { value: "FAILED", label: copy.statusFailed },
+    { value: "DUPLICATE", label: copy.statusDuplicate },
+    { value: "REJECTED", label: copy.statusRejected },
+  ];
+
+  const flagOptions = [
+    { value: "ALL", label: copy.allPayments },
+    { value: "1", label: copy.suspiciousOnly },
+  ];
+
   const counts = data.statusCounts;
   const unmatched = counts.UNMATCHED ?? 0;
   const failed = counts.FAILED ?? 0;
@@ -67,31 +73,31 @@ export function PaymentsView({
     <>
       <StatGrid columns={4}>
         <StatCard
-          label="Matching payments"
+          label={copy.matching}
           value={String(data.total)}
           hint={formatMoney(data.totalAmount)}
           icon={CreditCard}
           tone="primary"
         />
         <StatCard
-          label="Processed"
+          label={copy.processed}
           value={String(counts.PROCESSED ?? 0)}
-          hint="Credited to a member"
+          hint={copy.creditedToMember}
           icon={CreditCard}
           tone="success"
         />
         <StatCard
-          label="Unmatched"
+          label={copy.unmatched}
           value={String(unmatched)}
-          hint={unmatched > 0 ? "Needs manual attribution" : "Nothing waiting"}
+          hint={unmatched > 0 ? copy.needsAttribution : copy.nothingWaiting}
           icon={Link2}
           tone={unmatched > 0 ? "warning" : "success"}
           href={unmatched > 0 ? unmatchedPath : undefined}
         />
         <StatCard
-          label="Failed"
+          label={copy.failed}
           value={String(failed)}
-          hint="Rejected at verification"
+          hint={copy.rejectedAtVerification}
           icon={AlertTriangle}
           tone={failed > 0 ? "danger" : "success"}
         />
@@ -99,15 +105,20 @@ export function PaymentsView({
 
       <SearchFilterForm
         action={basePath}
-        placeholder="Provider id, reference, payer name, phone or narration…"
+        placeholder={copy.searchPlaceholder}
         search={search}
         selects={[
-          { name: "status", label: "Status", value: status, options: STATUS_OPTIONS },
+          {
+            name: "status",
+            label: d.common.status,
+            value: status,
+            options: statusOptions,
+          },
           {
             name: "flagged",
-            label: "Flagged",
+            label: copy.flagged,
             value: suspiciousOnly ? "1" : "ALL",
-            options: FLAG_OPTIONS,
+            options: flagOptions,
             width: "lg:w-44",
           },
         ]}
@@ -116,20 +127,20 @@ export function PaymentsView({
       {data.payments.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="No payments found"
-          description="No payments match these filters. Try clearing them, or check that the reconciliation worker is running."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Payment</TableHead>
-                <TableHead>Payer</TableHead>
-                <TableHead>Credited to</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead>Received</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.colPayment}</TableHead>
+                <TableHead>{copy.colPayer}</TableHead>
+                <TableHead>{copy.colCreditedTo}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead>{copy.colReceived}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -146,7 +157,7 @@ export function PaymentsView({
                     {payment.isSuspicious && (
                       <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-red-600">
                         <ShieldAlert className="size-3" aria-hidden="true" />
-                        {payment.suspicionReason ?? "Flagged as suspicious"}
+                        {payment.suspicionReason ?? copy.flaggedSuspicious}
                       </span>
                     )}
                   </TableCell>
@@ -184,7 +195,7 @@ export function PaymentsView({
                         </span>
                       </>
                     ) : (
-                      <span className="text-ink-muted">Not attributed</span>
+                      <span className="text-ink-muted">{copy.notAttributed}</span>
                     )}
                   </TableCell>
 
@@ -196,14 +207,10 @@ export function PaymentsView({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {payment.transactionDate.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(payment.transactionDate, locale)}
                     {!payment.verified && (
                       <span className="mt-0.5 block text-[11px] font-semibold text-amber-700">
-                        unverified
+                        {copy.unverified}
                       </span>
                     )}
                   </TableCell>

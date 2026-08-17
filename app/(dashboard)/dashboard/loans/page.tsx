@@ -4,6 +4,9 @@ import { CalendarClock, HandCoins, Plus } from "lucide-react";
 import { requireMember } from "@/lib/auth/guards";
 import { getMemberLoans } from "@/lib/services/member-queries";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,20 +28,24 @@ export const dynamic = "force-dynamic";
 
 export default async function MemberLoansPage() {
   const context = await requireMember("/dashboard/loans");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.loans;
+
   const { loans, applications } = await getMemberLoans(context.member!.id);
 
   const hasNothing = loans.length === 0 && applications.length === 0;
+  const date = (value: Date | string) => formatDate(value, locale);
 
   return (
     <div className="space-y-7">
       <PageHeader
-        title="My loans"
-        description="Your loan applications, active loans and repayment schedules."
+        title={copy.title}
+        description={copy.description}
         actions={
           <Button asChild size="sm">
             <Link href="/dashboard/loans/apply">
               <Plus className="size-4" aria-hidden="true" />
-              Apply for a loan
+              {copy.applyAction}
             </Link>
           </Button>
         }
@@ -47,11 +54,11 @@ export default async function MemberLoansPage() {
       {hasNothing && (
         <EmptyState
           icon={HandCoins}
-          title="No loans yet"
-          description="You have not applied for a loan. How much you can borrow depends on your savings balance and how long you have been a member."
+          title={copy.noneTitle}
+          description={copy.noneBody}
           action={
             <Button asChild>
-              <Link href="/dashboard/loans/apply">Apply for a loan</Link>
+              <Link href="/dashboard/loans/apply">{copy.applyAction}</Link>
             </Button>
           }
         />
@@ -60,7 +67,7 @@ export default async function MemberLoansPage() {
       {applications.length > 0 && (
         <section>
           <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-            Applications
+            {copy.applications}
           </h2>
 
           <div className="space-y-3">
@@ -80,40 +87,42 @@ export default async function MemberLoansPage() {
                     <p className="mt-0.5 font-mono text-xs text-ink-muted">
                       {application.reference}
                       {application.submittedAt &&
-                        ` · submitted ${formatDate(application.submittedAt)}`}
+                        ` · ${fill(copy.submittedOn, {
+                          date: date(application.submittedAt),
+                        })}`}
                     </p>
                   </div>
                   <StatusBadge status={application.status} />
                 </div>
 
                 <p className="mt-3 text-sm text-ink-muted">
-                  <span className="font-medium text-ink">Purpose:</span>{" "}
+                  <span className="font-medium text-ink">{copy.purpose}</span>{" "}
                   {application.purpose}
                 </p>
 
                 {application.status === "MORE_INFORMATION_REQUIRED" &&
                   application.infoRequested && (
                     <Alert variant="warning" className="mt-4">
-                      <strong>The association needs more information:</strong>{" "}
+                      <strong>{copy.needMoreInformation}</strong>{" "}
                       {application.infoRequested}
                     </Alert>
                   )}
 
                 {application.status === "REJECTED" && application.rejectionReason && (
                   <Alert variant="error" className="mt-4">
-                    <strong>Not approved:</strong> {application.rejectionReason}
+                    <strong>{copy.notApproved}</strong> {application.rejectionReason}
                   </Alert>
                 )}
 
                 {application.status === "APPROVED" && (
                   <Alert variant="success" className="mt-4">
-                    Approved for{" "}
+                    {copy.approvedFor}{" "}
                     <strong>
                       {formatMoney(
                         application.approvedAmount ?? application.requestedAmount
                       )}
                     </strong>
-                    . You will be notified when the funds are disbursed.
+                    {copy.approvedBody}
                   </Alert>
                 )}
               </div>
@@ -134,7 +143,8 @@ export default async function MemberLoansPage() {
               </h2>
               <p className="mt-0.5 font-mono text-xs text-ink-muted">
                 {loan.reference}
-                {loan.disbursedAt && ` · disbursed ${formatDate(loan.disbursedAt)}`}
+                {loan.disbursedAt &&
+                  ` · ${fill(copy.disbursedOn, { date: date(loan.disbursedAt) })}`}
               </p>
             </div>
             <StatusBadge
@@ -146,19 +156,28 @@ export default async function MemberLoansPage() {
           {loan.daysOverdue > 0 && (
             <Alert variant="error" className="mt-4">
               <strong>
-                {formatMoney(loan.overdueAmount)} is {loan.daysOverdue} day
-                {loan.daysOverdue === 1 ? "" : "s"} overdue.
+                {pluralize(copy.overdueAmount, loan.daysOverdue, {
+                  amount: formatMoney(loan.overdueAmount),
+                  days: loan.daysOverdue,
+                })}
               </strong>{" "}
-              Penalties may be applied until it is settled.
+              {copy.penaltiesMayApply}
             </Alert>
           )}
 
           <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Figure label="Interest rate" value={`${loan.interestRate}% p.a.`} />
-            <Figure label="Total payable" value={formatMoney(loan.totalPayable)} />
-            <Figure label="Repaid" value={formatMoney(loan.totalPaid)} tone="good" />
             <Figure
-              label="Outstanding"
+              label={copy.interestRate}
+              value={`${loan.interestRate}% ${copy.perYear}`}
+            />
+            <Figure label={copy.totalPayable} value={formatMoney(loan.totalPayable)} />
+            <Figure
+              label={copy.repaid}
+              value={formatMoney(loan.totalPaid)}
+              tone="good"
+            />
+            <Figure
+              label={copy.outstanding}
               value={formatMoney(loan.outstanding)}
               tone={loan.daysOverdue > 0 ? "bad" : undefined}
             />
@@ -177,7 +196,7 @@ export default async function MemberLoansPage() {
             <div className="mt-6">
               <h3 className="mb-3 flex items-center gap-2 font-heading text-sm font-semibold text-ink">
                 <CalendarClock className="size-4 text-primary" aria-hidden="true" />
-                Repayment schedule
+                {copy.schedule}
               </h3>
 
               <TableWrapper className="shadow-none">
@@ -185,14 +204,14 @@ export default async function MemberLoansPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>#</TableHead>
-                      <TableHead>Due date</TableHead>
-                      <TableHead align="right">Principal</TableHead>
-                      <TableHead align="right">Interest</TableHead>
-                      <TableHead align="right">Fees</TableHead>
-                      <TableHead align="right">Total due</TableHead>
-                      <TableHead align="right">Paid</TableHead>
-                      <TableHead align="right">Remaining</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{copy.dueDate}</TableHead>
+                      <TableHead align="right">{copy.principal}</TableHead>
+                      <TableHead align="right">{copy.interest}</TableHead>
+                      <TableHead align="right">{copy.fees}</TableHead>
+                      <TableHead align="right">{copy.totalDue}</TableHead>
+                      <TableHead align="right">{copy.paid}</TableHead>
+                      <TableHead align="right">{copy.remaining}</TableHead>
+                      <TableHead>{d.common.status}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -200,7 +219,7 @@ export default async function MemberLoansPage() {
                       <TableRow key={i.id}>
                         <TableCell className="text-sm text-ink-muted">{i.number}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
-                          {formatDate(i.dueDate)}
+                          {date(i.dueDate)}
                         </TableCell>
                         <TableCell align="right" tabular className="text-sm">
                           {formatMoney(i.principalDue, { showSymbol: false })}
@@ -259,12 +278,4 @@ function Figure({
       </dd>
     </div>
   );
-}
-
-function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }

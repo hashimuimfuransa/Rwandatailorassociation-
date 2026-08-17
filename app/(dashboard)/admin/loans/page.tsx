@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listLoans } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { LoanPortfolioView } from "@/components/dashboard/LoanPortfolioView";
 import { parseLoanStatus, parsePage } from "@/lib/validation/filters";
@@ -17,6 +18,7 @@ export default async function AdminLoansPage({
   const context = await requirePermission(PERMISSIONS.LOANS_VIEW_ALL, "/admin/loans");
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const search = params.q?.trim() || undefined;
   const status = parseLoanStatus(params.status);
@@ -30,8 +32,8 @@ export default async function AdminLoansPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Loan portfolio"
-        description="Every loan the association has on its books."
+        title={d.admin.loans.title}
+        description={d.admin.loans.description}
       />
       <LoanPortfolioView
         data={data}

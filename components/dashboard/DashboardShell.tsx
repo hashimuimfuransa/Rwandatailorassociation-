@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { SidebarContent, type BadgeCounts } from "@/components/dashboard/Sidebar";
-import { LanguageToggle } from "@/components/dashboard/LanguageToggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useLanguage } from "@/components/LanguageProvider";
 import { BREADCRUMB_LABELS, visibleNavigation } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,7 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { d } = useLanguage();
 
   const sections = useMemo(
     () => visibleNavigation(user.role, permissions),
@@ -91,7 +92,7 @@ export function DashboardShell({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Close navigation"
+            aria-label={d.shell.closeMenu}
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-ink/60 backdrop-blur-sm"
           />
@@ -106,7 +107,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              aria-label="Close navigation"
+              aria-label={d.shell.closeMenu}
               className="absolute -right-11 top-4 flex size-9 items-center justify-center rounded-full bg-white text-ink shadow-lift"
             >
               <X className="size-4" aria-hidden="true" />
@@ -148,13 +149,13 @@ function TopBar({
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="Open navigation"
+          aria-label={d.shell.openMenu}
           className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border text-ink lg:hidden"
         >
           <Menu className="size-5" aria-hidden="true" />
         </button>
 
-        <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+        <nav aria-label={d.shell.breadcrumb} className="min-w-0 flex-1">
           <ol className="flex items-center gap-1.5 text-sm">
             {crumbs.map((crumb, index) => {
               const last = index === crumbs.length - 1;

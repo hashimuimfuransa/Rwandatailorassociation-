@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * Filter bar for transaction listings.
@@ -21,25 +22,27 @@ import {
  * exact view they are looking at, and the back button should return to the
  * previous filter rather than an empty table.
  */
-
-const TYPES = [
-  { value: "ALL", label: "All types" },
-  { value: "DEPOSIT", label: "Deposits" },
-  { value: "WITHDRAWAL", label: "Withdrawals" },
-  { value: "LOAN_DISBURSEMENT", label: "Loan disbursements" },
-  { value: "LOAN_REPAYMENT", label: "Loan repayments" },
-  { value: "INTEREST", label: "Interest" },
-  { value: "FEE", label: "Fees" },
-  { value: "PENALTY", label: "Penalties" },
-  { value: "ADJUSTMENT", label: "Adjustments" },
-  { value: "REVERSAL", label: "Reversals" },
-];
-
 export function TransactionFilters({ basePath }: { basePath: string }) {
   const router = useRouter();
   const params = useSearchParams();
+  const { d } = useLanguage();
+  const copy = d.views.filters;
 
   const [search, setSearch] = useState(params.get("q") ?? "");
+
+  // Values are the TransactionType enum; only the labels are translated.
+  const types = [
+    { value: "ALL", label: copy.allTypes },
+    { value: "DEPOSIT", label: copy.deposits },
+    { value: "WITHDRAWAL", label: copy.withdrawals },
+    { value: "LOAN_DISBURSEMENT", label: copy.loanDisbursements },
+    { value: "LOAN_REPAYMENT", label: copy.loanRepayments },
+    { value: "INTEREST", label: copy.interest },
+    { value: "FEE", label: copy.fees },
+    { value: "PENALTY", label: copy.penalties },
+    { value: "ADJUSTMENT", label: copy.adjustments },
+    { value: "REVERSAL", label: copy.reversals },
+  ];
 
   function apply(next: Record<string, string | undefined>) {
     const query = new URLSearchParams(params.toString());
@@ -70,7 +73,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
     >
       <div className="flex-1">
         <label htmlFor="tx-search" className="mb-1.5 block text-xs font-semibold text-ink">
-          Search
+          {copy.search}
         </label>
         <div className="relative">
           <Search
@@ -81,7 +84,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
             id="tx-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Reference or description…"
+            placeholder={copy.searchTransactions}
             className="pl-10"
           />
         </div>
@@ -89,7 +92,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
 
       <div className="lg:w-52">
         <label htmlFor="tx-type" className="mb-1.5 block text-xs font-semibold text-ink">
-          Type
+          {copy.type}
         </label>
         <Select
           value={params.get("type") ?? "ALL"}
@@ -99,7 +102,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TYPES.map((t) => (
+            {types.map((t) => (
               <SelectItem key={t.value} value={t.value}>
                 {t.label}
               </SelectItem>
@@ -110,7 +113,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
 
       <div className="lg:w-40">
         <label htmlFor="tx-from" className="mb-1.5 block text-xs font-semibold text-ink">
-          From
+          {copy.from}
         </label>
         <Input
           id="tx-from"
@@ -122,7 +125,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
 
       <div className="lg:w-40">
         <label htmlFor="tx-to" className="mb-1.5 block text-xs font-semibold text-ink">
-          To
+          {copy.to}
         </label>
         <Input
           id="tx-to"
@@ -134,7 +137,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
 
       <div className="flex gap-2">
         <Button type="submit" size="sm">
-          Apply
+          {copy.apply}
         </Button>
         {hasFilters && (
           <Button
@@ -147,7 +150,7 @@ export function TransactionFilters({ basePath }: { basePath: string }) {
             }}
           >
             <X className="size-3.5" aria-hidden="true" />
-            Clear
+            {copy.clear}
           </Button>
         )}
       </div>

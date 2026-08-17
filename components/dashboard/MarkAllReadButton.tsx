@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export function MarkAllReadButton() {
   const router = useRouter();
+  const { d } = useLanguage();
   const [working, setWorking] = useState(false);
 
   async function markAll() {
@@ -25,7 +27,7 @@ export function MarkAllReadButton() {
       ) : (
         <CheckCheck className="size-4" aria-hidden="true" />
       )}
-      Mark all read
+      {d.views.notifications.markAllRead}
     </Button>
   );
 }

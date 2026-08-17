@@ -5,6 +5,9 @@ import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getAssociationSettings, getSettings } from "@/lib/services/admin-queries";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -13,27 +16,23 @@ import { SettingsTable } from "@/components/dashboard/SettingsTable";
 export const metadata: Metadata = { title: "Association settings | RTA" };
 export const dynamic = "force-dynamic";
 
-const DATE = { day: "numeric", month: "short", year: "numeric" } as const;
-
 export default async function AdminSettingsPage() {
   const context = await requirePermission(
     PERMISSIONS.ASSOCIATION_SETTINGS,
     "/admin/settings"
   );
   const associationId = resolveAssociationScope(context);
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.settings;
 
   // A super admin browsing without choosing a tenant has no single association
   // to configure; the platform screen is the right place for that.
   if (!associationId) {
     return (
       <div>
-        <PageHeader
-          title="Association settings"
-          description="Configuration for a single association."
-        />
-        <Alert variant="info" title="No association selected">
-          These settings belong to one association. Open an association from the
-          platform directory, or use platform settings for global configuration.
+        <PageHeader title={copy.title} description={copy.descriptionPlain} />
+        <Alert variant="info" title={copy.noAssociationTitle}>
+          {copy.noAssociationBody}
         </Alert>
       </div>
     );
@@ -52,35 +51,32 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Association settings"
-        description={`Configuration for ${association.name}.`}
+        title={copy.title}
+        description={fill(copy.description, { association: association.name })}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={Building2} title="Profile">
-          <Row label="Name" value={association.name} />
-          <Row label="Legal name" value={association.legalName ?? "—"} />
-          <Row label="Code" value={association.code} mono />
+        <Panel icon={Building2} title={copy.profile}>
+          <Row label={d.common.name} value={association.name} />
+          <Row label={copy.legalName} value={association.legalName ?? "—"} />
+          <Row label={copy.code} value={association.code} mono />
           <Row
-            label="Status"
+            label={d.common.status}
             value={<StatusBadge status={association.status} size="sm" />}
           />
-          <Row label="Registration no." value={association.registrationNo ?? "—"} mono />
-          <Row label="Tax id" value={association.taxId ?? "—"} mono />
-          <Row label="Currency" value={association.currency} />
-          <Row label="Timezone" value={association.timezone} />
-          <Row
-            label="Created"
-            value={association.createdAt.toLocaleDateString("en-GB", DATE)}
-          />
+          <Row label={copy.registrationNo} value={association.registrationNo ?? "—"} mono />
+          <Row label={copy.taxId} value={association.taxId ?? "—"} mono />
+          <Row label={copy.currency} value={association.currency} />
+          <Row label={copy.timezone} value={association.timezone} />
+          <Row label={copy.created} value={formatDate(association.createdAt, locale)} />
         </Panel>
 
-        <Panel icon={SettingsIcon} title="Contact">
-          <Row label="Email" value={association.email ?? "—"} />
-          <Row label="Phone" value={association.phone ?? "—"} />
-          <Row label="Website" value={association.website ?? "—"} />
+        <Panel icon={SettingsIcon} title={copy.contact}>
+          <Row label={d.common.email} value={association.email ?? "—"} />
+          <Row label={d.common.phone} value={association.phone ?? "—"} />
+          <Row label={copy.website} value={association.website ?? "—"} />
           <Row
-            label="Address"
+            label={d.forms.field.address}
             value={
               [
                 association.addressLine1,
@@ -94,52 +90,58 @@ export default async function AdminSettingsPage() {
                 .join(", ") || "—"
             }
           />
-          <Row label="Members" value={String(association._count.members)} />
-          <Row label="Administrators" value={String(association._count.users)} />
-          <Row label="Loan products" value={String(association._count.loanProducts)} />
+          <Row label={d.common.members} value={String(association._count.members)} />
+          <Row label={copy.administrators} value={String(association._count.users)} />
+          <Row label={copy.loanProducts} value={String(association._count.loanProducts)} />
         </Panel>
 
-        <Panel icon={Banknote} title="Collection account">
-          <Row label="Bank" value={association.bankName ?? "—"} />
-          <Row label="Account name" value={association.bankAccountName ?? "—"} />
-          <Row label="Account number" value={association.bankAccountNumber ?? "—"} mono />
-          <Row label="Branch code" value={association.bankBranchCode ?? "—"} mono />
+        <Panel icon={Banknote} title={copy.collectionAccount}>
+          <Row label={copy.bank} value={association.bankName ?? "—"} />
+          <Row label={copy.accountName} value={association.bankAccountName ?? "—"} />
           <Row
-            label="Reference sequence"
+            label={copy.accountNumber}
+            value={association.bankAccountNumber ?? "—"}
+            mono
+          />
+          <Row label={copy.branchCode} value={association.bankBranchCode ?? "—"} mono />
+          <Row
+            label={copy.referenceSequence}
             value={String(association.memberRefSequence)}
-            hint="Next member payment reference is minted from this counter"
+            hint={copy.referenceSequenceHint}
           />
         </Panel>
 
-        <Panel icon={PiggyBank} title="Savings and withdrawal rules">
+        <Panel icon={PiggyBank} title={copy.rules}>
           {savingsRule ? (
             <>
               <Row
-                label="Minimum deposit"
+                label={copy.minimumDeposit}
                 value={formatMoney(savingsRule.minimumDeposit, { currency })}
               />
               <Row
-                label="Maximum deposit"
+                label={copy.maximumDeposit}
                 value={
                   savingsRule.maximumDeposit
                     ? formatMoney(savingsRule.maximumDeposit, { currency })
-                    : "No limit"
+                    : copy.noLimit
                 }
               />
               <Row
-                label="Minimum balance"
+                label={copy.minimumBalance}
                 value={formatMoney(savingsRule.minimumBalance, { currency })}
               />
               <Row
-                label="Withdrawals"
-                value={savingsRule.allowWithdrawals ? "Allowed" : "Suspended"}
+                label={copy.withdrawalsLabel}
+                value={savingsRule.allowWithdrawals ? copy.allowed : copy.suspended}
               />
               <Row
-                label="Approval required"
-                value={savingsRule.withdrawalRequiresApproval ? "Yes" : "No"}
+                label={copy.approvalRequired}
+                value={
+                  savingsRule.withdrawalRequiresApproval ? d.common.yes : d.common.no
+                }
               />
               <Row
-                label="Withdrawal fee"
+                label={copy.withdrawalFee}
                 value={
                   savingsRule.withdrawalFeeType === "PERCENTAGE"
                     ? `${savingsRule.withdrawalFeeValue}%`
@@ -147,50 +149,43 @@ export default async function AdminSettingsPage() {
                 }
               />
               <Row
-                label="Notice period"
-                value={`${savingsRule.withdrawalNoticeDays} day(s)`}
+                label={copy.noticePeriod}
+                value={pluralize(copy.noticeDays, savingsRule.withdrawalNoticeDays)}
               />
               <Row
-                label="Monthly contribution"
+                label={copy.monthlyContribution}
                 value={
                   savingsRule.monthlyContribution
                     ? `${formatMoney(savingsRule.monthlyContribution, { currency })}${
                         savingsRule.contributionDueDay
-                          ? `, due day ${savingsRule.contributionDueDay}`
+                          ? fill(copy.dueDay, {
+                              day: savingsRule.contributionDueDay,
+                            })
                           : ""
                       }`
-                    : "Not enforced"
+                    : copy.notEnforced
                 }
               />
               <Row
-                label="Annual interest"
+                label={copy.annualInterest}
                 value={`${savingsRule.annualInterestRate}%`}
               />
             </>
           ) : (
-            <p className="py-3 text-sm text-ink-muted">
-              No savings rule is configured, so platform defaults apply: deposits
-              are unrestricted and withdrawals require approval.
-            </p>
+            <p className="py-3 text-sm text-ink-muted">{copy.noRule}</p>
           )}
         </Panel>
       </div>
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Stored configuration
+          {copy.storedConfiguration}
         </h2>
-        <SettingsTable
-          settings={settings}
-          emptyMessage="This association has no stored settings; platform defaults apply to everything."
-        />
+        <SettingsTable settings={settings} emptyMessage={copy.noStoredSettings} />
       </section>
 
       <p className="rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink-muted">
-        This screen is read-only. Changing a financial rule alters how every
-        future deposit, withdrawal and loan is calculated, so edits are made
-        through a migration or by a platform administrator, and every change is
-        recorded in the audit log.
+        {copy.readOnlyNote}
       </p>
     </div>
   );

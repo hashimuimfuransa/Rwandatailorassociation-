@@ -1,0 +1,417 @@
+import type { Locale } from "@/types";
+
+/**
+ * Every form that records a person: public membership registration, and the
+ * enrolment and editing an administrator does at the desk.
+ *
+ * These are the screens most likely to be filled in by someone who speaks only
+ * Kinyarwanda, which is why the field hints and the validation messages are
+ * translated too and not just the labels. A form that asks its question in
+ * Kinyarwanda and then rejects the answer in English is worse than one that
+ * never pretended.
+ *
+ * Place names are not translated. Rwanda's provinces and districts have one
+ * official spelling each — see lib/rwanda.ts — and translating them would
+ * defeat the point of choosing them from a fixed list.
+ */
+export interface FormsCopy {
+  /// Shared field labels and hints.
+  field: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    nationalId: string;
+    dateOfBirth: string;
+    gender: string;
+    occupation: string;
+    businessName: string;
+    address: string;
+    city: string;
+    province: string;
+    district: string;
+    mobileMoneyNumber: string;
+    bankAccountNumber: string;
+    password: string;
+    confirmPassword: string;
+    note: string;
+  };
+  placeholder: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    nationalId: string;
+    occupation: string;
+    city: string;
+    password: string;
+    confirmPassword: string;
+    relation: string;
+  };
+  hint: {
+    phoneRegister: string;
+    phoneAdmin: string;
+    nationalIdRegister: string;
+    nationalIdAdmin: string;
+    emailOptional: string;
+    mobileMoney: string;
+    districtRegister: string;
+  };
+  gender: {
+    male: string;
+    female: string;
+    other: string;
+    undisclosed: string;
+  };
+  location: {
+    selectProvince: string;
+    selectDistrict: string;
+  };
+  /// Public membership registration.
+  register: {
+    legend: string;
+    showPassword: string;
+    hidePassword: string;
+    terms: string;
+    submit: string;
+    submitting: string;
+    failed: string;
+    alreadyMember: string;
+    signIn: string;
+    successTitle: string;
+    membershipNumber: string;
+    paymentReference: string;
+    copyReference: string;
+    keepReferenceTitle: string;
+    keepReferenceBody: string;
+    goToSignIn: string;
+    backHome: string;
+    error: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      nationalId: string;
+      password: string;
+      confirmPassword: string;
+      terms: string;
+    };
+  };
+  /// Administrator enrolment and editing of a member's file.
+  member: {
+    identity: string;
+    identityHint: string;
+    livelihood: string;
+    livelihoodHint: string;
+    address: string;
+    paymentIdentifiers: string;
+    paymentIdentifiersHint: string;
+    nextOfKin: string;
+    nextOfKinName: string;
+    nextOfKinPhone: string;
+    nextOfKinRelation: string;
+    enrolment: string;
+    enrolmentHint: string;
+    recordChange: string;
+    recordChangeHint: string;
+    membershipStatus: string;
+    statusActive: string;
+    statusPending: string;
+    noteLabel: string;
+    noteHintEnrol: string;
+    noteHintEdit: string;
+    enrol: string;
+    enrolling: string;
+    saveChanges: string;
+    savingChanges: string;
+    enrolFailed: string;
+    saveFailed: string;
+    matchingWarning: string;
+    enrolledTitle: string;
+    giveToMember: string;
+    memberNumber: string;
+    paymentReference: string;
+    paymentReferenceHint: string;
+    temporaryPassword: string;
+    temporaryPasswordHint: string;
+    copyDetails: string;
+    openMemberFile: string;
+    enrolAnother: string;
+    passwordWarning: string;
+  };
+}
+
+export const forms: Record<Locale, FormsCopy> = {
+  en: {
+    field: {
+      firstName: "First name",
+      lastName: "Last name",
+      email: "Email address",
+      phone: "Mobile number",
+      nationalId: "National ID",
+      dateOfBirth: "Date of birth",
+      gender: "Gender",
+      occupation: "Occupation or business",
+      businessName: "Business name",
+      address: "Address",
+      city: "City or sector",
+      province: "Province",
+      district: "District",
+      mobileMoneyNumber: "Mobile money number",
+      bankAccountNumber: "Bank account number",
+      password: "Password",
+      confirmPassword: "Confirm password",
+      note: "Note",
+    },
+    placeholder: {
+      firstName: "Jean",
+      lastName: "Uwimana",
+      email: "you@example.com",
+      phone: "0788123456",
+      nationalId: "1199012345678901",
+      occupation: "Tailor, fashion designer, textile trader…",
+      city: "Kigali",
+      password: "At least 10 characters",
+      confirmPassword: "Re-enter your password",
+      relation: "Spouse",
+    },
+    hint: {
+      phoneRegister: "Used for payment matching and SMS alerts",
+      phoneAdmin:
+        "Used to reach them, and to match payments sent from this number.",
+      nationalIdRegister: "16 digits — optional, speeds up verification",
+      nationalIdAdmin:
+        "16 digits. Recording it marks their identity check as pending.",
+      emailOptional: "Optional. Leave blank if they do not have one.",
+      mobileMoney: "Leave blank if it is the same as their phone number.",
+      districtRegister: "Where you live or run your workshop",
+    },
+    gender: {
+      male: "Male",
+      female: "Female",
+      other: "Other",
+      undisclosed: "Prefer not to say",
+    },
+    location: {
+      selectProvince: "Select a province",
+      selectDistrict: "Select a district",
+    },
+    register: {
+      legend: "Your details",
+      showPassword: "Show password",
+      hidePassword: "Hide password",
+      terms:
+        "I confirm the details above are correct and I accept the Rwanda Tailors Association savings and loan rules.",
+      submit: "Submit membership application",
+      submitting: "Submitting application…",
+      failed: "Could not submit your application.",
+      alreadyMember: "Already a member?",
+      signIn: "Sign in",
+      successTitle: "Application received",
+      membershipNumber: "Membership number",
+      paymentReference: "Your payment reference",
+      copyReference: "Copy payment reference",
+      keepReferenceTitle: "Keep your payment reference.",
+      keepReferenceBody:
+        "Quote {reference} on every payment you make to the association. It is how your contribution is matched to your savings account.",
+      goToSignIn: "Go to sign in",
+      backHome: "Back to homepage",
+      error: {
+        firstName: "Enter your first name",
+        lastName: "Enter your last name",
+        email: "Enter a valid email address",
+        phone: "Enter a valid Rwandan mobile number, e.g. 0788123456",
+        nationalId: "The national ID must be 16 digits",
+        password: "Choose a stronger password",
+        confirmPassword: "Passwords do not match",
+        terms: "You must accept the association rules to register",
+      },
+    },
+    member: {
+      identity: "Identity",
+      identityHint: "The minimum needed to open an account.",
+      livelihood: "Livelihood",
+      livelihoodHint: "What the member does for a living.",
+      address: "Address",
+      paymentIdentifiers: "Payment identifiers",
+      paymentIdentifiersHint:
+        "Fallback keys used to attribute a payment that arrives without a reference.",
+      nextOfKin: "Next of kin",
+      nextOfKinName: "Full name",
+      nextOfKinPhone: "Phone number",
+      nextOfKinRelation: "Relationship",
+      enrolment: "Enrolment",
+      enrolmentHint:
+        "Active members can transact immediately. This decision is recorded against your name.",
+      recordChange: "Record the change",
+      recordChangeHint:
+        "Membership status is changed from the member's file, not here — approving, suspending and reactivating each need their own reason.",
+      membershipStatus: "Membership status",
+      statusActive: "Active — can save and borrow now",
+      statusPending: "Pending approval — needs a second check",
+      noteLabel: "Note for the audit log",
+      noteHintEnrol: "Optional. e.g. where the paper application came from.",
+      noteHintEdit:
+        "Optional. Why the details changed — useful when a payment later lands unexpectedly.",
+      enrol: "Enrol member",
+      enrolling: "Enrolling…",
+      saveChanges: "Save changes",
+      savingChanges: "Saving…",
+      enrolFailed: "The member could not be enrolled",
+      saveFailed: "The changes could not be saved",
+      matchingWarning:
+        "Changing the phone, mobile money or bank account number changes which payments are attributed to this member in future. The old and new values are both written to the audit log.",
+      enrolledTitle: "Member enrolled",
+      giveToMember: "Give these to the member",
+      memberNumber: "Member number",
+      paymentReference: "Payment reference",
+      paymentReferenceHint:
+        "They must quote this on every deposit so it is credited automatically.",
+      temporaryPassword: "Temporary password",
+      temporaryPasswordHint:
+        "Shown once and never again. They will be asked to change it when they first sign in.",
+      copyDetails: "Copy details",
+      openMemberFile: "Open member file",
+      enrolAnother: "Enrol another",
+      passwordWarning:
+        "Write the temporary password down or copy it now. It is stored only as a hash, so nobody — including you — can look it up later. If it is lost the member has to reset their password instead.",
+    },
+  },
+
+  rw: {
+    field: {
+      firstName: "Izina ribanza",
+      lastName: "Izina ry'umuryango",
+      email: "Aderesi imeyili",
+      phone: "Nimero ya telefone",
+      nationalId: "Indangamuntu",
+      dateOfBirth: "Itariki y'amavuko",
+      gender: "Igitsina",
+      occupation: "Umwuga cyangwa ubucuruzi",
+      businessName: "Izina ry'ubucuruzi",
+      address: "Aderesi",
+      city: "Umujyi cyangwa umurenge",
+      province: "Intara",
+      district: "Akarere",
+      mobileMoneyNumber: "Nimero ya mobile money",
+      bankAccountNumber: "Nimero ya konti ya banki",
+      password: "Ijambobanga",
+      confirmPassword: "Emeza ijambobanga",
+      note: "Icyitonderwa",
+    },
+    placeholder: {
+      firstName: "Jean",
+      lastName: "Uwimana",
+      email: "wowe@urugero.com",
+      phone: "0788123456",
+      nationalId: "1199012345678901",
+      occupation: "Umudozi, umushushanya myambaro, umucuruzi w'imyenda…",
+      city: "Kigali",
+      password: "Byibuze inyuguti 10",
+      confirmPassword: "Ongera wandike ijambobanga",
+      relation: "Uwo mubana",
+    },
+    hint: {
+      phoneRegister: "Ikoreshwa mu guhuza ubwishyu no kohereza ubutumwa",
+      phoneAdmin:
+        "Ikoreshwa mu kumugeraho, no guhuza ubwishyu bwoherejwe kuri iyi nimero.",
+      nationalIdRegister:
+        "Imibare 16 — ntibigomba, ariko byihutisha kugenzura umwirondoro",
+      nationalIdAdmin:
+        "Imibare 16. Kuyandika bituma igenzura ry'umwirondoro riba ritegereje.",
+      emailOptional: "Ntibigomba. Siga ubusa niba adafite imeyili.",
+      mobileMoney: "Siga ubusa niba ari imwe na nimero ya telefone.",
+      districtRegister: "Aho utuye cyangwa aho ukorera",
+    },
+    gender: {
+      male: "Gabo",
+      female: "Gore",
+      other: "Ikindi",
+      undisclosed: "Simbyifuza kuvuga",
+    },
+    location: {
+      selectProvince: "Hitamo intara",
+      selectDistrict: "Hitamo akarere",
+    },
+    register: {
+      legend: "Umwirondoro wawe",
+      showPassword: "Erekana ijambobanga",
+      hidePassword: "Hisha ijambobanga",
+      terms:
+        "Nemeza ko amakuru yavuzwe haruguru ari ukuri, kandi nemera amabwiriza y'ihuriro ry'Abadozi mu Rwanda agenga kuzigama no kuguriza.",
+      submit: "Ohereza ubusabe bwo kwinjira mu ihuriro",
+      submitting: "Turohereza ubusabe…",
+      failed: "Ntitwashoboye kohereza ubusabe bwawe.",
+      alreadyMember: "Uri umunyamuryango?",
+      signIn: "Injira",
+      successTitle: "Ubusabe bwakiriwe",
+      membershipNumber: "Nimero y'umunyamuryango",
+      paymentReference: "Nimero yawe y'ubwishyu",
+      copyReference: "Koporora nimero y'ubwishyu",
+      keepReferenceTitle: "Bika neza nimero yawe y'ubwishyu.",
+      keepReferenceBody:
+        "Andika {reference} kuri buri bwishyu bwose wohereza mu ihuriro. Ni yo ituma amafaranga yawe ajya kuri konti yawe y'ubuzigame.",
+      goToSignIn: "Jya ku rupapuro rwo kwinjira",
+      backHome: "Subira ku rupapuro rwa mbere",
+      error: {
+        firstName: "Andika izina ribanza",
+        lastName: "Andika izina ry'umuryango",
+        email: "Andika aderesi imeyili nyayo",
+        phone: "Andika nimero ya telefone yo mu Rwanda, urugero 0788123456",
+        nationalId: "Indangamuntu igomba kuba imibare 16",
+        password: "Hitamo ijambobanga rikomeye kurushaho",
+        confirmPassword: "Amagambobanga ntaba amwe",
+        terms: "Ugomba kwemera amabwiriza y'ihuriro mbere yo kwiyandikisha",
+      },
+    },
+    member: {
+      identity: "Umwirondoro",
+      identityHint: "Ibyibuze bikenewe kugira konti ifungurwe.",
+      livelihood: "Icyo akora",
+      livelihoodHint: "Umurimo umunyamuryango abeshejweho.",
+      address: "Aderesi",
+      paymentIdentifiers: "Ibimenyetso by'ubwishyu",
+      paymentIdentifiersHint:
+        "Ibimenyetso bifashisha guhuza ubwishyu bwageze butagira nimero y'ubwishyu.",
+      nextOfKin: "Uwo mwegereye",
+      nextOfKinName: "Amazina yose",
+      nextOfKinPhone: "Nimero ya telefone",
+      nextOfKinRelation: "Isano",
+      enrolment: "Kwinjiza umunyamuryango",
+      enrolmentHint:
+        "Abanyamuryango bakora (ACTIVE) bashobora kubitsa cyangwa kuguza ako kanya. Iki cyemezo cyandikwa ku izina ryawe.",
+      recordChange: "Andika impinduka",
+      recordChangeHint:
+        "Imimerere y'ubunyamuryango ihindurwa mu dosiye y'umunyamuryango, atari hano — kwemeza, guhagarika no kongera gukora bisaba impamvu yihariye.",
+      membershipStatus: "Imimerere y'ubunyamuryango",
+      statusActive: "Arakora — ashobora kuzigama no kuguza nonaha",
+      statusPending: "Ategereje kwemezwa — bisaba igenzura rya kabiri",
+      noteLabel: "Icyitonderwa cy'igitabo cy'ibyakozwe",
+      noteHintEnrol: "Ntibigomba. Urugero: aho urupapuro rw'ubusabe ruturutse.",
+      noteHintEdit:
+        "Ntibigomba. Impamvu amakuru yahindutse — bifasha igihe ubwishyu buje mu buryo butunguranye.",
+      enrol: "Injiza umunyamuryango",
+      enrolling: "Turamwinjiza…",
+      saveChanges: "Bika impinduka",
+      savingChanges: "Turabika…",
+      enrolFailed: "Umunyamuryango ntiyashoboye kwinjizwa",
+      saveFailed: "Impinduka ntizashoboye kubikwa",
+      matchingWarning:
+        "Guhindura nimero ya telefone, ya mobile money cyangwa ya konti ya banki bihindura ubwishyu buzahuzwa n'uyu munyamuryango. Agaciro ka kera n'aka none byombi byandikwa mu gitabo cy'ibyakozwe.",
+      enrolledTitle: "Umunyamuryango yinjijwe",
+      giveToMember: "Ibi bihe umunyamuryango",
+      memberNumber: "Nimero y'umunyamuryango",
+      paymentReference: "Nimero y'ubwishyu",
+      paymentReferenceHint:
+        "Agomba kuyandika kuri buri bwitso kugira ngo yandikwe ku konti ye ako kanya.",
+      temporaryPassword: "Ijambobanga ry'agateganyo",
+      temporaryPasswordHint:
+        "Rigaragara rimwe gusa. Azasabwa kurihindura ubwa mbere ainjira.",
+      copyDetails: "Koporora amakuru",
+      openMemberFile: "Fungura dosiye y'umunyamuryango",
+      enrolAnother: "Injiza undi",
+      passwordWarning:
+        "Andika ijambobanga ry'agateganyo cyangwa urikoporore ubu. Ribikwa nk'ibanga ryahishwe, ku buryo nta muntu — nawe ubwawe — ushobora kongera kuribona. Nirikubura, umunyamuryango agomba gusaba ijambobanga rishya.",
+    },
+  },
+};

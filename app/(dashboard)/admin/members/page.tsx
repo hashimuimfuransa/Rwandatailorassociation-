@@ -6,6 +6,9 @@ import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listMembers } from "@/lib/services/members";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -42,6 +45,8 @@ export default async function AdminMembersPage({
   const context = await requirePermission(PERMISSIONS.MEMBERS_VIEW, "/admin/members");
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.members;
 
   const data = await listMembers({
     associationId,
@@ -56,14 +61,14 @@ export default async function AdminMembersPage({
   return (
     <div>
       <PageHeader
-        title="Members"
-        description={`${data.total} member${data.total === 1 ? "" : "s"} in the register.`}
+        title={copy.title}
+        description={pluralize(copy.inRegister, data.total)}
         actions={
           context.permissions.has(PERMISSIONS.MEMBERS_CREATE) ? (
             <Button asChild size="sm">
               <Link href="/admin/members/new">
                 <UserPlus className="size-3.5" aria-hidden="true" />
-                Enrol member
+                {copy.enrol}
               </Link>
             </Button>
           ) : undefined
@@ -75,8 +80,8 @@ export default async function AdminMembersPage({
       {data.members.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No members found"
-          description="No members match these filters. Try clearing the search."
+          title={copy.noneTitle}
+          description={copy.noneBody}
           className="mt-5"
         />
       ) : (
@@ -84,13 +89,13 @@ export default async function AdminMembersPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead align="right">Savings</TableHead>
-                <TableHead align="right">Loan owing</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>KYC</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead>{copy.colMember}</TableHead>
+                <TableHead>{copy.colContact}</TableHead>
+                <TableHead align="right">{copy.colSavings}</TableHead>
+                <TableHead align="right">{copy.colLoanOwing}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
+                <TableHead>{copy.colKyc}</TableHead>
+                <TableHead>{copy.colJoined}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -127,7 +132,7 @@ export default async function AdminMembersPage({
                     </span>
                     {member.hasOverdueLoan && (
                       <span className="mt-0.5 block text-[11px] font-semibold text-red-600">
-                        overdue
+                        {copy.overdue}
                       </span>
                     )}
                   </TableCell>
@@ -141,13 +146,7 @@ export default async function AdminMembersPage({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {member.joinedAt
-                      ? new Date(member.joinedAt).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
+                    {formatDate(member.joinedAt, locale)}
                   </TableCell>
                 </TableRow>
               ))}

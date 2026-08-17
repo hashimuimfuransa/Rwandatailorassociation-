@@ -19,6 +19,9 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getMemberProfile } from "@/lib/services/members";
 import { getMemberTransactions } from "@/lib/services/member-queries";
 import { add, formatMoney, subtract } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -35,12 +38,6 @@ import {
 } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
-
-const DATE = { day: "numeric", month: "short", year: "numeric" } as const;
-
-function formatDate(value: Date | null | undefined): string {
-  return value ? value.toLocaleDateString("en-GB", DATE) : "—";
-}
 
 export async function generateMetadata({
   params,
@@ -80,6 +77,11 @@ export default async function AdminMemberDetailPage({
   // with every other admin screen.
   resolveAssociationScope(context, member.associationId);
 
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.file;
+  const field = d.forms.field;
+  const date = (value: Date | null | undefined) => formatDate(value, locale);
+
   const account = member.savingsAccounts[0] ?? null;
   const recent = await getMemberTransactions(member.id, { pageSize: 15 });
 
@@ -93,19 +95,22 @@ export default async function AdminMemberDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={`${member.user.firstName} ${member.user.lastName}`.trim()}
-        description={`Member ${member.memberNumber} · payment reference ${member.paymentReference}`}
+        description={fill(copy.description, {
+          number: member.memberNumber,
+          reference: member.paymentReference,
+        })}
         actions={
           <>
             {context.permissions.has(PERMISSIONS.MEMBERS_UPDATE) && (
               <Button asChild size="sm">
                 <Link href={`/admin/members/${member.id}/edit`}>
                   <Pencil className="size-3.5" aria-hidden="true" />
-                  Edit details
+                  {copy.editDetails}
                 </Link>
               </Button>
             )}
             <Button asChild variant="outline" size="sm">
-              <Link href="/admin/members">Back to register</Link>
+              <Link href="/admin/members">{d.admin.members.backToRegister}</Link>
             </Button>
           </>
         }
@@ -117,21 +122,25 @@ export default async function AdminMemberDetailPage({
         <StatusBadge status={member.user.status} />
         {member.suspensionReason && (
           <span className="text-sm text-red-600">
-            Suspended: {member.suspensionReason}
+            {fill(copy.suspendedReason, { reason: member.suspensionReason })}
           </span>
         )}
       </div>
 
       <StatGrid columns={4}>
         <StatCard
-          label="Savings balance"
+          label={copy.savingsBalance}
           value={account ? formatMoney(account.balance) : "—"}
-          hint={account ? `Account ${account.accountNumber}` : "No account opened"}
+          hint={
+            account
+              ? fill(copy.accountNumber, { number: account.accountNumber })
+              : copy.noAccount
+          }
           icon={PiggyBank}
           tone="primary"
         />
         <StatCard
-          label="Available"
+          label={copy.available}
           value={
             account
               ? formatMoney(subtract(account.balance, account.lockedBalance))
@@ -139,86 +148,86 @@ export default async function AdminMemberDetailPage({
           }
           hint={
             account
-              ? `${formatMoney(account.lockedBalance)} locked`
-              : "Nothing to withdraw"
+              ? fill(copy.locked, { amount: formatMoney(account.lockedBalance) })
+              : copy.nothingToWithdraw
           }
           icon={ShieldCheck}
           tone="success"
         />
         <StatCard
-          label="Loans owing"
+          label={copy.loansOwing}
           value={formatMoney(outstanding)}
-          hint={`${member.loans.length} loan(s) on file`}
+          hint={pluralize(copy.loansOnFile, member.loans.length)}
           icon={HandCoins}
         />
         <StatCard
-          label="Overdue loans"
+          label={copy.overdueLoans}
           value={String(overdueLoans.length)}
-          hint={overdueLoans.length > 0 ? "In arrears" : "Up to date"}
+          hint={overdueLoans.length > 0 ? copy.inArrears : copy.upToDate}
           icon={AlertTriangle}
           tone={overdueLoans.length > 0 ? "danger" : "success"}
         />
       </StatGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={UserRound} title="Member file">
-          <Row label="Member number" value={member.memberNumber} mono />
-          <Row label="Payment reference" value={member.paymentReference} mono />
-          <Row label="National ID" value={member.nationalId ?? "—"} mono />
-          <Row label="Date of birth" value={formatDate(member.dateOfBirth)} />
-          <Row label="Occupation" value={member.occupation ?? "—"} />
-          <Row label="Business" value={member.businessName ?? "—"} />
+        <Panel icon={UserRound} title={copy.memberFile}>
+          <Row label={copy.memberNumber} value={member.memberNumber} mono />
+          <Row label={copy.paymentReference} value={member.paymentReference} mono />
+          <Row label={field.nationalId} value={member.nationalId ?? "—"} mono />
+          <Row label={field.dateOfBirth} value={date(member.dateOfBirth)} />
+          <Row label={field.occupation} value={member.occupation ?? "—"} />
+          <Row label={copy.business} value={member.businessName ?? "—"} />
+          <Row label={field.district} value={member.district ?? "—"} />
+          <Row label={field.province} value={member.province ?? "—"} />
           <Row
-            label="Address"
+            label={field.address}
             value={
-              [member.addressLine1, member.city, member.district, member.province]
-                .filter(Boolean)
-                .join(", ") || "—"
+              [member.addressLine1, member.city].filter(Boolean).join(", ") || "—"
             }
           />
-          <Row label="Joined" value={formatDate(member.joinedAt ?? member.createdAt)} />
-          <Row label="Approved" value={formatDate(member.approvedAt)} />
+          <Row label={copy.joined} value={date(member.joinedAt ?? member.createdAt)} />
+          <Row label={copy.approvedOn} value={date(member.approvedAt)} />
         </Panel>
 
-        <Panel icon={ShieldCheck} title="Contact and access">
-          <Row label="Email" value={member.user.email ?? "—"} />
+        <Panel icon={ShieldCheck} title={copy.contactAccess}>
+          <Row label={d.common.email} value={member.user.email ?? "—"} />
           <Row
-            label="Email verified"
-            value={member.user.emailVerifiedAt ? "Yes" : "No"}
+            label={copy.emailVerified}
+            value={member.user.emailVerifiedAt ? d.common.yes : d.common.no}
           />
-          <Row label="Phone" value={member.user.phone ?? "—"} />
+          <Row label={d.common.phone} value={member.user.phone ?? "—"} />
           <Row
-            label="Phone verified"
-            value={member.user.phoneVerifiedAt ? "Yes" : "No"}
+            label={copy.phoneVerified}
+            value={member.user.phoneVerifiedAt ? d.common.yes : d.common.no}
           />
-          <Row label="Mobile money" value={member.mobileMoneyNumber ?? "—"} mono />
-          <Row label="Bank account" value={member.bankAccountNumber ?? "—"} mono />
-          <Row label="Last sign-in" value={formatDate(member.user.lastLoginAt)} />
-          <Row label="Next of kin" value={member.nextOfKinName ?? "—"} />
-          <Row label="Their phone" value={member.nextOfKinPhone ?? "—"} />
+          <Row label={copy.mobileMoney} value={member.mobileMoneyNumber ?? "—"} mono />
+          <Row label={copy.bankAccount} value={member.bankAccountNumber ?? "—"} mono />
+          <Row label={copy.lastSignIn} value={date(member.user.lastLoginAt)} />
+          <Row label={copy.nextOfKin} value={member.nextOfKinName ?? "—"} />
+          <Row label={copy.theirPhone} value={member.nextOfKinPhone ?? "—"} />
         </Panel>
       </div>
 
       <section>
-        <h2 className="mb-3 font-heading text-lg font-semibold text-ink">Loans</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
+          {copy.loans}
+        </h2>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead align="right">Principal</TableHead>
-                <TableHead align="right">Payable</TableHead>
-                <TableHead align="right">Repaid</TableHead>
-                <TableHead align="right">Outstanding</TableHead>
-                <TableHead>Disbursed</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead align="right">{copy.colPrincipal}</TableHead>
+                <TableHead align="right">{copy.colPayable}</TableHead>
+                <TableHead align="right">{copy.colRepaid}</TableHead>
+                <TableHead align="right">{copy.colOutstanding}</TableHead>
+                <TableHead>{copy.colDisbursed}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {member.loans.length === 0 ? (
-                <TableEmpty colSpan={7}>
-                  This member has never taken a loan.
-                </TableEmpty>
+                <TableEmpty colSpan={7}>{copy.neverBorrowed}</TableEmpty>
               ) : (
                 member.loans.map((loan) => (
                   <TableRow key={loan.id}>
@@ -240,12 +249,12 @@ export default async function AdminMemberDetailPage({
                       })}
                       {loan.daysOverdue > 0 && (
                         <span className="mt-0.5 block text-[11px] font-semibold text-red-600">
-                          {loan.daysOverdue} days late
+                          {pluralize(copy.daysLate, loan.daysOverdue)}
                         </span>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {formatDate(loan.disbursedAt)}
+                      {date(loan.disbursedAt)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={loan.status} size="sm" />
@@ -261,25 +270,25 @@ export default async function AdminMemberDetailPage({
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold text-ink">
-            Recent transactions
+            {copy.recentTransactions}
           </h2>
           <Link
             href={`/admin/savings/transactions?q=${encodeURIComponent(member.memberNumber)}`}
             className="text-sm font-semibold text-primary hover:underline"
           >
-            View all
+            {d.common.viewAll}
           </Link>
         </div>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Balance after</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
+                <TableHead>{d.common.description}</TableHead>
+                <TableHead>{d.common.type}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{copy.balanceAfter}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -287,7 +296,7 @@ export default async function AdminMemberDetailPage({
                 <TableEmpty colSpan={6}>
                   <span className="inline-flex items-center gap-2">
                     <Receipt className="size-4" aria-hidden="true" />
-                    No transactions have been posted to this account.
+                    {copy.noTransactions}
                   </span>
                 </TableEmpty>
               ) : (
@@ -297,7 +306,7 @@ export default async function AdminMemberDetailPage({
                       {t.reference}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {formatDate(t.createdAt)}
+                      {date(t.createdAt)}
                     </TableCell>
                     <TableCell className="max-w-xs text-sm">
                       {t.description ?? "—"}
@@ -328,11 +337,11 @@ export default async function AdminMemberDetailPage({
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Administrator notes
+          {copy.notes}
         </h2>
         {member.notes.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border bg-surface p-5 text-sm text-ink-muted">
-            No notes have been recorded on this member.
+            {copy.noNotes}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -344,8 +353,8 @@ export default async function AdminMemberDetailPage({
                 <p className="text-sm leading-relaxed text-ink">{note.body}</p>
                 <p className="mt-2 text-xs text-ink-muted">
                   {note.author.firstName} {note.author.lastName} ·{" "}
-                  {formatDate(note.createdAt)}
-                  {note.isInternal && " · internal"}
+                  {date(note.createdAt)}
+                  {note.isInternal && ` · ${copy.internal}`}
                 </p>
               </li>
             ))}

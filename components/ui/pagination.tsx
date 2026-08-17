@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
+import { fill } from "@/lib/i18n/fill";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,6 +27,9 @@ export function Pagination({
   onPageChange: (page: number) => void;
   className?: string;
 }) {
+  const { d } = useLanguage();
+  const copy = d.views.pagination;
+
   if (total === 0) return null;
 
   const first = (page - 1) * pageSize + 1;
@@ -32,15 +37,17 @@ export function Pagination({
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={copy.label}
       className={cn(
         "flex flex-col items-center justify-between gap-3 border-t border-border px-5 py-3.5 sm:flex-row",
         className
       )}
     >
       <p className="text-xs text-ink-muted">
-        Showing <span className="font-semibold tabular-nums text-ink">{first}</span>–
-        <span className="font-semibold tabular-nums text-ink">{last}</span> of{" "}
+        {copy.showing}{" "}
+        <span className="font-semibold tabular-nums text-ink">{first}</span>–
+        <span className="font-semibold tabular-nums text-ink">{last}</span>{" "}
+        {d.common.of}{" "}
         <span className="font-semibold tabular-nums text-ink">{total}</span>
       </p>
 
@@ -48,7 +55,7 @@ export function Pagination({
         <PageButton
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          aria-label="Previous page"
+          aria-label={copy.previous}
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
         </PageButton>
@@ -67,7 +74,7 @@ export function Pagination({
               key={entry}
               onClick={() => onPageChange(entry)}
               active={entry === page}
-              aria-label={`Page ${entry}`}
+              aria-label={fill(copy.page, { page: entry })}
               aria-current={entry === page ? "page" : undefined}
             >
               {entry}
@@ -78,7 +85,7 @@ export function Pagination({
         <PageButton
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          aria-label="Next page"
+          aria-label={copy.next}
         >
           <ChevronRight className="size-4" aria-hidden="true" />
         </PageButton>

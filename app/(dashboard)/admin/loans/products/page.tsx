@@ -4,6 +4,8 @@ import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listLoanProducts } from "@/lib/services/admin-queries";
 import { formatMoney, isZero } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,35 +13,35 @@ import { EmptyState } from "@/components/ui/empty-state";
 export const metadata: Metadata = { title: "Loan products | RTA" };
 export const dynamic = "force-dynamic";
 
-/** "PERCENTAGE" fees are a rate; "FIXED" ones are an amount. */
-function formatCharge(type: string, value: string, currency: string): string {
-  if (isZero(value)) return "None";
-  return type === "PERCENTAGE"
-    ? `${value}%`
-    : formatMoney(value, { currency, showSymbol: false });
-}
-
 export default async function AdminLoanProductsPage() {
   const context = await requirePermission(
     PERMISSIONS.LOAN_PRODUCTS_MANAGE,
     "/admin/loans/products"
   );
   const associationId = resolveAssociationScope(context);
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.products;
+
   const products = await listLoanProducts(associationId);
   const currency = context.association?.currency ?? "RWF";
 
+  /** "PERCENTAGE" fees are a rate; "FIXED" ones are an amount. */
+  function formatCharge(type: string, value: string): string {
+    if (isZero(value)) return d.common.none;
+    return type === "PERCENTAGE"
+      ? `${value}%`
+      : formatMoney(value, { currency, showSymbol: false });
+  }
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Loan products"
-        description="The rules every loan application is assessed against."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {products.length === 0 ? (
         <EmptyState
           icon={Cog}
-          title="No loan products configured"
-          description="Members cannot apply for a loan until at least one product exists. Products are created by seeding or by a platform administrator."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
@@ -71,7 +73,7 @@ export default async function AdminLoanProductsPage() {
               <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Highlight
                   icon={Percent}
-                  label="Interest"
+                  label={copy.interest}
                   value={`${product.interestRate}%`}
                   hint={`${product.interestPeriod.toLowerCase()}, ${product.interestMethod
                     .replace(/_/g, " ")
@@ -79,80 +81,108 @@ export default async function AdminLoanProductsPage() {
                 />
                 <Highlight
                   icon={Cog}
-                  label="Amount"
+                  label={copy.amount}
                   value={formatMoney(product.maxAmount, {
                     currency,
                     showSymbol: false,
                   })}
-                  hint={`min ${formatMoney(product.minAmount, { currency, showSymbol: false })}`}
+                  hint={fill(copy.minAmount, {
+                    amount: formatMoney(product.minAmount, {
+                      currency,
+                      showSymbol: false,
+                    }),
+                  })}
                 />
                 <Highlight
                   icon={Users}
-                  label="In use"
+                  label={copy.inUse}
                   value={String(product.loanCount)}
-                  hint={`${product.applicationCount} application(s)`}
+                  hint={pluralize(copy.applicationCount, product.applicationCount)}
                 />
               </div>
 
               <dl className="divide-y divide-border text-sm">
                 <Row
-                  label="Eligibility"
-                  value={`${formatMoney(product.minimumSavings, { currency, showSymbol: false })} saved · ${product.minimumMembershipMonths} month(s) membership`}
+                  label={copy.eligibility}
+                  value={pluralize(
+                    copy.eligibilityValue,
+                    product.minimumMembershipMonths,
+                    {
+                      amount: formatMoney(product.minimumSavings, {
+                        currency,
+                        showSymbol: false,
+                      }),
+                      months: product.minimumMembershipMonths,
+                    }
+                  )}
                 />
                 <Row
-                  label="Savings multiplier"
-                  value={`${product.savingsMultiplier}× savings${
+                  label={copy.multiplier}
+                  value={`${fill(copy.multiplierValue, {
+                    factor: product.savingsMultiplier,
+                  })}${
                     product.absoluteMaxAmount
-                      ? `, capped at ${formatMoney(product.absoluteMaxAmount, { currency, showSymbol: false })}`
+                      ? fill(copy.cappedAt, {
+                          amount: formatMoney(product.absoluteMaxAmount, {
+                            currency,
+                            showSymbol: false,
+                          }),
+                        })
                       : ""
                   }`}
                 />
                 <Row
-                  label="Term"
-                  value={`${product.minTermMonths}–${product.maxTermMonths} months, ${product.defaultFrequency.toLowerCase()}`}
+                  label={copy.term}
+                  value={fill(copy.termValue, {
+                    min: product.minTermMonths,
+                    max: product.maxTermMonths,
+                    frequency: product.defaultFrequency.toLowerCase(),
+                  })}
                 />
                 <Row
-                  label="Processing fee"
+                  label={copy.processingFee}
                   value={formatCharge(
                     product.processingFeeType,
-                    product.processingFeeValue,
-                    currency
+                    product.processingFeeValue
                   )}
                 />
                 <Row
-                  label="Insurance fee"
+                  label={copy.insuranceFee}
                   value={formatCharge(
                     product.insuranceFeeType,
-                    product.insuranceFeeValue,
-                    currency
+                    product.insuranceFeeValue
                   )}
                 />
                 <Row
-                  label="Late penalty"
-                  value={`${formatCharge(product.penaltyType, product.penaltyValue, currency)}${
+                  label={copy.latePenalty}
+                  value={`${formatCharge(product.penaltyType, product.penaltyValue)}${
                     product.penaltyGraceDays > 0
-                      ? ` after ${product.penaltyGraceDays} grace day(s)`
+                      ? pluralize(copy.graceDays, product.penaltyGraceDays)
                       : ""
                   }`}
                 />
                 <Row
-                  label="Guarantors"
+                  label={copy.guarantors}
                   value={
                     product.requiresGuarantors
-                      ? `${product.minimumGuarantors} required`
-                      : "Not required"
+                      ? fill(copy.guarantorsRequired, {
+                          count: product.minimumGuarantors,
+                        })
+                      : copy.notRequired
                   }
                 />
                 <Row
-                  label="Collateral"
-                  value={product.requiresCollateral ? "Required" : "Not required"}
+                  label={copy.collateral}
+                  value={
+                    product.requiresCollateral ? copy.required : copy.notRequired
+                  }
                 />
                 <Row
-                  label="Concurrent loans"
+                  label={copy.concurrent}
                   value={
                     product.singleActiveLoan
-                      ? "One active loan per member"
-                      : "Multiple allowed"
+                      ? copy.singleLoan
+                      : copy.multipleAllowed
                   }
                 />
               </dl>
@@ -162,9 +192,7 @@ export default async function AdminLoanProductsPage() {
       )}
 
       <p className="rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink-muted">
-        These rules are advisory in the application form and authoritative on
-        submission — eligibility is re-checked server-side when a member applies,
-        so changing a product here changes what is actually enforced.
+        {copy.advisoryNote}
       </p>
     </div>
   );

@@ -4,6 +4,8 @@ import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getUnmatchedPayments } from "@/lib/services/admin-dashboard";
 import { prisma } from "@/lib/db/prisma";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { pluralize } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
@@ -34,6 +36,8 @@ export default async function UnmatchedPaymentsPage({
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.payments;
 
   const [data, members] = await Promise.all([
     getUnmatchedPayments(associationId, page),
@@ -64,25 +68,23 @@ export default async function UnmatchedPaymentsPage({
   return (
     <div>
       <PageHeader
-        title="Unmatched payments"
-        description="Money received that could not be attributed to a member automatically."
+        title={copy.unmatchedTitle}
+        description={copy.unmatchedDescription}
       />
 
       {data.total === 0 ? (
         <EmptyState
           icon={Link2}
-          title="Nothing waiting"
-          description="Every payment received has been matched to a member and credited. New unmatched payments will appear here."
+          title={copy.unmatchedNoneTitle}
+          description={copy.unmatchedNoneBody}
         />
       ) : (
         <>
           <Alert variant="warning" className="mb-5">
             <strong className="font-semibold">
-              {data.total} payment{data.total === 1 ? "" : "s"} awaiting attention.
+              {pluralize(copy.unmatchedCount, data.total)}
             </strong>{" "}
-            Each one is money in the association&rsquo;s account that a member has
-            not been credited for. Match it only when you are confident whose it
-            is — the decision is recorded against your name.
+            {copy.unmatchedNotice}
           </Alert>
 
           <UnmatchedPaymentsTable

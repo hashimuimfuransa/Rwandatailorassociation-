@@ -3,6 +3,9 @@ import { AlertTriangle, Building2, HandCoins, PiggyBank, Users } from "lucide-re
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listAssociations } from "@/lib/services/associations";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -21,14 +24,6 @@ import type { AssociationStatus } from "@/lib/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Associations | RTA" };
 export const dynamic = "force-dynamic";
-
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "PENDING", label: "Pending" },
-  { value: "SUSPENDED", label: "Suspended" },
-  { value: "ARCHIVED", label: "Archived" },
-];
 
 const VALID_STATUS = new Set(["PENDING", "ACTIVE", "SUSPENDED", "ARCHIVED"]);
 
@@ -53,44 +48,54 @@ export default async function SuperAdminAssociationsPage({
       ? (params.status as AssociationStatus)
       : undefined;
 
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.platform.associations;
+
+  // The filter offers the tenant lifecycle states; the values are the enum the
+  // database stores, so only the labels change with the language.
+  const statusOptions = [
+    { value: "ALL", label: copy.allStatuses },
+    { value: "ACTIVE", label: copy.statusActive },
+    { value: "PENDING", label: copy.statusPending },
+    { value: "SUSPENDED", label: copy.statusSuspended },
+    { value: "ARCHIVED", label: copy.statusArchived },
+  ];
+
   const { associations, totals } = await listAssociations({ search, status });
   const filtered = Boolean(search || status);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Associations"
-        description="Every tenant on the platform, with the money each one holds."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Associations"
+          label={copy.count}
           value={String(totals.associations)}
-          hint={`${totals.active} active`}
+          hint={fill(copy.activeCount, { count: totals.active })}
           icon={Building2}
           tone="primary"
         />
         <StatCard
-          label="Members"
+          label={copy.members}
           value={totals.members.toLocaleString("en-US")}
-          hint={filtered ? "Across the filtered tenants" : "Across every tenant"}
+          hint={filtered ? copy.acrossFiltered : copy.acrossAll}
           icon={Users}
         />
         <StatCard
-          label="Savings held"
+          label={copy.savingsHeld}
           value={formatMoney(totals.savingsBalance)}
-          hint="Sum of active account balances"
+          hint={copy.savingsHint}
           icon={PiggyBank}
           tone="success"
         />
         <StatCard
-          label="Loans outstanding"
+          label={copy.loansOutstanding}
           value={formatMoney(totals.loansOutstanding)}
           hint={
             totals.unmatchedPayments > 0
-              ? `${totals.unmatchedPayments} unmatched payment(s)`
-              : "All payments attributed"
+              ? pluralize(copy.unmatchedHint, totals.unmatchedPayments)
+              : copy.allAttributed
           }
           icon={HandCoins}
           tone={totals.unmatchedPayments > 0 ? "warning" : "default"}
@@ -99,14 +104,14 @@ export default async function SuperAdminAssociationsPage({
 
       <SearchFilterForm
         action="/super-admin/associations"
-        placeholder="Name, code, legal name, city…"
+        placeholder={copy.searchPlaceholder}
         search={search}
         selects={[
           {
             name: "status",
-            label: "Status",
+            label: d.common.status,
             value: status,
-            options: STATUS_OPTIONS,
+            options: statusOptions,
           },
         ]}
       />
@@ -114,26 +119,22 @@ export default async function SuperAdminAssociationsPage({
       {associations.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title={filtered ? "No associations match" : "No associations yet"}
-          description={
-            filtered
-              ? "Nothing matches these filters. Try clearing the search."
-              : "The platform has no tenants. Seed the database or create the first association to get started."
-          }
+          title={filtered ? copy.noMatchTitle : copy.noneTitle}
+          description={filtered ? copy.noMatchBody : copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Association</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead align="right">Members</TableHead>
-                <TableHead align="right">Savings</TableHead>
-                <TableHead align="right">Loans owing</TableHead>
-                <TableHead align="right">Unmatched</TableHead>
-                <TableHead align="right">Admins</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>{copy.colAssociation}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
+                <TableHead align="right">{copy.colMembers}</TableHead>
+                <TableHead align="right">{copy.colSavings}</TableHead>
+                <TableHead align="right">{copy.colLoansOwing}</TableHead>
+                <TableHead align="right">{copy.colUnmatched}</TableHead>
+                <TableHead align="right">{copy.colAdmins}</TableHead>
+                <TableHead>{copy.colCreated}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -158,7 +159,9 @@ export default async function SuperAdminAssociationsPage({
                     {association.members.total}
                     {association.members.pendingApproval > 0 && (
                       <span className="mt-0.5 block text-[11px] font-semibold text-amber-700">
-                        {association.members.pendingApproval} pending
+                        {fill(copy.pendingSuffix, {
+                          count: association.members.pendingApproval,
+                        })}
                       </span>
                     )}
                   </TableCell>
@@ -178,7 +181,9 @@ export default async function SuperAdminAssociationsPage({
                     {association.loans.overdueCount > 0 && (
                       <span className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-semibold text-red-600">
                         <AlertTriangle className="size-3" aria-hidden="true" />
-                        {association.loans.overdueCount} overdue
+                        {fill(copy.overdueSuffix, {
+                          count: association.loans.overdueCount,
+                        })}
                       </span>
                     )}
                   </TableCell>
@@ -200,11 +205,7 @@ export default async function SuperAdminAssociationsPage({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {association.createdAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(association.createdAt, locale)}
                   </TableCell>
                 </TableRow>
               ))}

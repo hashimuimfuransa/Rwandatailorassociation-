@@ -1,4 +1,7 @@
 import { EyeOff, Lock } from "lucide-react";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   TableWrapper,
@@ -22,13 +25,16 @@ type Setting = Awaited<ReturnType<typeof getSettings>>[number];
  * credential is configured, not what it is. That is deliberate: a provider
  * secret must not end up in an HTML payload, a browser cache or a screenshot.
  */
-export function SettingsTable({
+export async function SettingsTable({
   settings,
   emptyMessage,
 }: {
   settings: Setting[];
   emptyMessage: string;
 }) {
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.views.settings;
+
   if (settings.length === 0) {
     return (
       <TableWrapper>
@@ -59,10 +65,10 @@ export function SettingsTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Setting</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Last changed</TableHead>
+                  <TableHead>{copy.colSetting}</TableHead>
+                  <TableHead>{copy.colValue}</TableHead>
+                  <TableHead>{copy.colType}</TableHead>
+                  <TableHead>{copy.colLastChanged}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -86,7 +92,7 @@ export function SettingsTable({
                       {setting.isSecret ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
                           <EyeOff className="size-3.5" aria-hidden="true" />
-                          {setting.configured ? "Configured" : "Not set"}
+                          {setting.configured ? copy.configured : copy.notSet}
                         </span>
                       ) : (
                         <span className="block break-words font-mono text-xs text-ink">
@@ -96,7 +102,7 @@ export function SettingsTable({
                       {!setting.isEditable && (
                         <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-ink-muted">
                           <Lock className="size-3" aria-hidden="true" />
-                          Platform-managed
+                          {copy.platformManaged}
                         </span>
                       )}
                     </TableCell>
@@ -111,14 +117,10 @@ export function SettingsTable({
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {setting.updatedAt.toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(setting.updatedAt, locale)}
                       {setting.updatedBy && (
                         <span className="mt-0.5 block text-[11px]">
-                          by {setting.updatedBy}
+                          {fill(copy.changedBy, { name: setting.updatedBy })}
                         </span>
                       )}
                     </TableCell>

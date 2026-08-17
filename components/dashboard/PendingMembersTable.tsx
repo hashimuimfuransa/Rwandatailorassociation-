@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Pagination } from "@/components/ui/pagination";
+import { useLanguage } from "@/components/LanguageProvider";
+import { fill } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import {
   TableWrapper,
   Table,
@@ -51,6 +54,9 @@ export function PendingMembersTable({
   totalPages: number;
 }) {
   const router = useRouter();
+  const { d, locale } = useLanguage();
+  const copy = d.views.pendingMembers;
+
   const [approving, setApproving] = useState<PendingMember | null>(null);
   const [rejecting, setRejecting] = useState<PendingMember | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +76,7 @@ export function PendingMembersTable({
 
     const payload = await response.json();
     if (!response.ok) {
-      throw new Error(payload?.error?.message ?? "The action could not be completed");
+      throw new Error(payload?.error?.message ?? copy.actionFailed);
     }
 
     router.refresh();
@@ -88,11 +94,11 @@ export function PendingMembersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Applicant</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Occupation</TableHead>
-              <TableHead>Applied</TableHead>
-              <TableHead align="right">Decision</TableHead>
+              <TableHead>{copy.colApplicant}</TableHead>
+              <TableHead>{copy.colContact}</TableHead>
+              <TableHead>{copy.colOccupation}</TableHead>
+              <TableHead>{copy.colApplied}</TableHead>
+              <TableHead align="right">{copy.colDecision}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -122,11 +128,7 @@ export function PendingMembersTable({
                 </TableCell>
 
                 <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                  {new Date(member.appliedAt).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatDate(member.appliedAt, locale)}
                 </TableCell>
 
                 <TableCell align="right">
@@ -139,7 +141,7 @@ export function PendingMembersTable({
                       }}
                     >
                       <Check className="size-3.5" aria-hidden="true" />
-                      Approve
+                      {copy.approve}
                     </Button>
                     <Button
                       size="sm"
@@ -150,7 +152,7 @@ export function PendingMembersTable({
                       }}
                     >
                       <X className="size-3.5" aria-hidden="true" />
-                      Decline
+                      {copy.decline}
                     </Button>
                   </div>
                 </TableCell>
@@ -171,13 +173,16 @@ export function PendingMembersTable({
       <ConfirmDialog
         open={approving !== null}
         onOpenChange={(open) => !open && setApproving(null)}
-        title="Approve this membership?"
+        title={copy.approveTitle}
         description={
           approving
-            ? `${approving.fullName} will be able to sign in, and their savings account will be opened. They will be sent payment reference ${approving.paymentReference}.`
+            ? fill(copy.approveBody, {
+                name: approving.fullName,
+                reference: approving.paymentReference,
+              })
             : undefined
         }
-        confirmLabel="Approve membership"
+        confirmLabel={copy.approveConfirm}
         onConfirm={async () => {
           if (approving) await act(approving, "approve");
         }}
@@ -186,17 +191,17 @@ export function PendingMembersTable({
       <ConfirmDialog
         open={rejecting !== null}
         onOpenChange={(open) => !open && setRejecting(null)}
-        title="Decline this application?"
+        title={copy.declineTitle}
         description={
           rejecting
-            ? `${rejecting.fullName} will be told their application was not approved, and will not be able to sign in.`
+            ? fill(copy.declineBody, { name: rejecting.fullName })
             : undefined
         }
-        confirmLabel="Decline application"
+        confirmLabel={copy.declineConfirm}
         tone="danger"
         requireReason
-        reasonLabel="Why is this application being declined?"
-        reasonPlaceholder="e.g. Could not verify the national ID provided"
+        reasonLabel={copy.declineReasonLabel}
+        reasonPlaceholder={copy.declineReasonPlaceholder}
         onConfirm={async (reason) => {
           if (rejecting) await act(rejecting, "reject", reason);
         }}

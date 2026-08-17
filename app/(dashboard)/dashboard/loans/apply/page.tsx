@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HandCoins } from "lucide-react";
 import { requireMember } from "@/lib/auth/guards";
 import { getAvailableLoanProducts } from "@/lib/services/member-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function LoanApplyPage() {
   const context = await requireMember("/dashboard/loans/apply");
+  const { d } = await getDashboardCopy();
+  const copy = d.member.apply;
 
   const data = await getAvailableLoanProducts(
     context.member!.id,
@@ -23,8 +26,8 @@ export default async function LoanApplyPage() {
     return (
       <EmptyState
         icon={HandCoins}
-        title="No loan products available"
-        description="The association has not published any loan products yet. Please check back later or contact the office."
+        title={copy.noProductsTitle}
+        description={copy.noProductsBody}
       />
     );
   }
@@ -32,14 +35,14 @@ export default async function LoanApplyPage() {
   if (data.hasActiveLoan && data.products.every((p) => p.singleActiveLoan)) {
     return (
       <div>
-        <PageHeader title="Apply for a loan" />
+        <PageHeader title={copy.title} />
         <EmptyState
           icon={HandCoins}
-          title="You already have an active loan"
-          description="This association allows one loan at a time. You can apply again once your current loan is fully repaid."
+          title={copy.activeLoanTitle}
+          description={copy.activeLoanBody}
           action={
             <Button asChild variant="outline">
-              <Link href="/dashboard/loans">View my loan</Link>
+              <Link href="/dashboard/loans">{copy.viewMyLoan}</Link>
             </Button>
           }
         />
@@ -49,10 +52,7 @@ export default async function LoanApplyPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Apply for a loan"
-        description="Choose a product, then tell us how much you need and what for."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <LoanApplicationForm
         products={data.products}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listTransactions } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { TransactionsView } from "@/components/dashboard/TransactionsView";
 import { parseTransactionType, parsePage } from "@/lib/validation/filters";
@@ -21,6 +22,7 @@ export default async function PlatformTransactionsPage({
 }) {
   await requireSuperAdmin("/super-admin/transactions");
   const params = await searchParams;
+  const { d } = await getDashboardCopy();
 
   const data = await listTransactions(null, {
     page: parsePage(params.page),
@@ -33,8 +35,8 @@ export default async function PlatformTransactionsPage({
   return (
     <div>
       <PageHeader
-        title="All transactions"
-        description="Every savings ledger movement across every association."
+        title={d.platform.transactions.title}
+        description={d.platform.transactions.description}
       />
       <TransactionsView data={data} basePath="/super-admin/transactions" />
     </div>

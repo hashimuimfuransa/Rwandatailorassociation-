@@ -3,11 +3,16 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { requireAuth } from "@/lib/auth/guards";
 import { getMemberNotifications } from "@/lib/services/member-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
+import { formatDayMonth } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MarkAllReadButton } from "@/components/dashboard/MarkAllReadButton";
 import { PaginationLinks } from "@/components/dashboard/PaginationLinks";
 import { cn } from "@/lib/utils";
+import type { Locale } from "@/types";
+import type { MemberCopy } from "@/lib/i18n/dashboard/member";
 
 export const metadata: Metadata = { title: "Notifications | RTA" };
 export const dynamic = "force-dynamic";
@@ -26,6 +31,8 @@ export default async function NotificationsPage({
 }) {
   const context = await requireAuth("/dashboard/notifications");
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.notifications;
 
   const data = await getMemberNotifications(
     context.user.id,
@@ -35,21 +42,17 @@ export default async function NotificationsPage({
   return (
     <div>
       <PageHeader
-        title="Notifications"
+        title={copy.title}
         description={
           data.unread > 0
-            ? `${data.unread} unread`
-            : "You are up to date."
+            ? fill(copy.unread, { count: data.unread })
+            : copy.upToDate
         }
         actions={data.unread > 0 ? <MarkAllReadButton /> : undefined}
       />
 
       {data.notifications.length === 0 ? (
-        <EmptyState
-          icon={Bell}
-          title="No notifications"
-          description="Payment confirmations, loan updates and reminders will appear here."
-        />
+        <EmptyState icon={Bell} title={copy.noneTitle} description={copy.noneBody} />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
           <ul className="divide-y divide-border">
@@ -83,14 +86,14 @@ export default async function NotificationsPage({
                       {!notification.readAt && (
                         <span
                           className="size-2 rounded-full bg-primary"
-                          aria-label="Unread"
+                          aria-label={copy.unreadLabel}
                         />
                       )}
                       <time
                         className="whitespace-nowrap text-xs text-ink-muted"
                         dateTime={notification.createdAt.toISOString()}
                       >
-                        {relativeTime(notification.createdAt)}
+                        {relativeTime(notification.createdAt, copy, locale)}
                       </time>
                     </div>
                   </div>
@@ -123,13 +126,28 @@ export default async function NotificationsPage({
   );
 }
 
-function relativeTime(date: Date): string {
+/**
+ * A notification's age. Translated rather than formatted with Intl.RelativeTime,
+ * which has no Kinyarwanda data — and because Kinyarwanda puts the elapsed
+ * period after the verb ("hashize iminota 5"), which a fragment cannot express.
+ */
+function relativeTime(
+  date: Date,
+  copy: MemberCopy["notifications"],
+  locale: Locale
+): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  if (seconds < 60) return copy.justNow;
+  if (seconds < 3600) {
+    return fill(copy.minutesAgo, { count: Math.floor(seconds / 60) });
+  }
+  if (seconds < 86400) {
+    return fill(copy.hoursAgo, { count: Math.floor(seconds / 3600) });
+  }
+  if (seconds < 604800) {
+    return fill(copy.daysAgo, { count: Math.floor(seconds / 86400) });
+  }
 
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return formatDayMonth(date, locale);
 }

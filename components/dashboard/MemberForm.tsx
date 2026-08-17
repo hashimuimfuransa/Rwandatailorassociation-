@@ -8,6 +8,13 @@ import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { RwandaLocationFields } from "@/components/ui/rwanda-location-fields";
+import { useLanguage } from "@/components/LanguageProvider";
+import {
+  canonicalDistrict,
+  canonicalProvince,
+  provinceForDistrict,
+} from "@/lib/rwanda";
 
 /**
  * Member enrolment and editing.
@@ -65,23 +72,45 @@ interface CreatedMember {
   message: string;
 }
 
-const GENDERS = [
-  { value: "", label: "Not recorded" },
-  { value: "MALE", label: "Male" },
-  { value: "FEMALE", label: "Female" },
-  { value: "OTHER", label: "Other" },
-  { value: "UNDISCLOSED", label: "Prefer not to say" },
-];
-
 export function MemberForm({ member }: { member?: MemberFormValues }) {
   const router = useRouter();
   const editing = Boolean(member);
+
+  const { d } = useLanguage();
+  const copy = d.forms.member;
+  const field = d.forms.field;
+
+  const genders = [
+    { value: "", label: d.common.notRecorded },
+    { value: "MALE", label: d.forms.gender.male },
+    { value: "FEMALE", label: d.forms.gender.female },
+    { value: "OTHER", label: d.forms.gender.other },
+    { value: "UNDISCLOSED", label: d.forms.gender.undisclosed },
+  ];
 
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedMember | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // The one part of this form React has to hold: the province and district are
+  // linked, so each depends on the other's current value. Everything else is
+  // uncontrolled and read from FormData on submit.
+  //
+  // An older file may carry a district with no province — it was free text
+  // once. The district settles the question, so fill the province in from it
+  // rather than showing a blank the administrator has to answer again.
+  //
+  // Both are canonicalised on the way in: a value the dropdown does not
+  // recognise has no option to show as selected, and would read as blank.
+  const [location, setLocation] = useState(() => ({
+    province:
+      canonicalProvince(member?.province) ??
+      provinceForDistrict(member?.district) ??
+      "",
+    district: canonicalDistrict(member?.district) ?? "",
+  }));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,9 +139,7 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
         setErrors(body?.error?.details ?? {});
         setFormError(
           body?.error?.message ??
-            (member
-              ? "The changes could not be saved"
-              : "The member could not be enrolled")
+            (member ? copy.saveFailed : copy.enrolFailed)
         );
         return;
       }
@@ -128,7 +155,7 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
       // So the register and the sidebar counts reflect the new member.
       router.refresh();
     } catch {
-      setFormError("Could not reach the server. Check your connection and try again.");
+      setFormError(d.common.serverUnreachable);
     } finally {
       setSubmitting(false);
     }
@@ -137,26 +164,26 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
   if (created) {
     return (
       <div className="space-y-5">
-        <Alert variant="success" title="Member enrolled">
+        <Alert variant="success" title={copy.enrolledTitle}>
           {created.message}
         </Alert>
 
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
           <h2 className="font-heading text-base font-semibold text-ink">
-            Give these to the member
+            {copy.giveToMember}
           </h2>
 
           <dl className="mt-4 divide-y divide-border">
-            <Detail label="Member number" value={created.memberNumber} />
+            <Detail label={copy.memberNumber} value={created.memberNumber} />
             <Detail
-              label="Payment reference"
+              label={copy.paymentReference}
               value={created.paymentReference}
-              hint="They must quote this on every deposit so it is credited automatically."
+              hint={copy.paymentReferenceHint}
             />
             <Detail
-              label="Temporary password"
+              label={copy.temporaryPassword}
               value={created.temporaryPassword}
-              hint="Shown once and never again. They will be asked to change it when they first sign in."
+              hint={copy.temporaryPasswordHint}
             />
           </dl>
 
@@ -168,19 +195,21 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
               onClick={() => {
                 void navigator.clipboard
                   ?.writeText(
-                    `Member number: ${created.memberNumber}\n` +
-                      `Payment reference: ${created.paymentReference}\n` +
-                      `Temporary password: ${created.temporaryPassword}`
+                    `${copy.memberNumber}: ${created.memberNumber}\n` +
+                      `${copy.paymentReference}: ${created.paymentReference}\n` +
+                      `${copy.temporaryPassword}: ${created.temporaryPassword}`
                   )
                   .then(() => setCopied(true));
               }}
             >
               <Copy className="size-3.5" aria-hidden="true" />
-              {copied ? "Copied" : "Copy details"}
+              {copied ? d.common.copied : copy.copyDetails}
             </Button>
 
             <Button asChild size="sm">
-              <Link href={`/admin/members/${created.memberId}`}>Open member file</Link>
+              <Link href={`/admin/members/${created.memberId}`}>
+                {copy.openMemberFile}
+              </Link>
             </Button>
 
             <Button
@@ -190,17 +219,18 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
               onClick={() => {
                 setCreated(null);
                 setCopied(false);
+                // The uncontrolled fields come back empty on their own; these
+                // two live in React state and would keep the last member's.
+                setLocation({ province: "", district: "" });
               }}
             >
-              Enrol another
+              {copy.enrolAnother}
             </Button>
           </div>
         </div>
 
         <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
-          Write the temporary password down or copy it now. It is stored only as
-          a hash, so nobody — including you — can look it up later. If it is
-          lost the member has to reset their password instead.
+          {copy.passwordWarning}
         </p>
       </div>
     );
@@ -210,53 +240,53 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {formError && <Alert variant="error">{formError}</Alert>}
 
-      <Section title="Identity" description="The minimum needed to open an account.">
+      <Section title={copy.identity} description={copy.identityHint}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="firstName" label="First name" required error={errors.firstName}>
+          <Field id="firstName" label={field.firstName} required error={errors.firstName}>
             {(props) => <Input name="firstName" defaultValue={member?.firstName ?? ""} autoComplete="off" {...props} />}
           </Field>
 
-          <Field id="lastName" label="Last name" required error={errors.lastName}>
+          <Field id="lastName" label={field.lastName} required error={errors.lastName}>
             {(props) => <Input name="lastName" defaultValue={member?.lastName ?? ""} autoComplete="off" {...props} />}
           </Field>
 
           <Field
             id="phone"
-            label="Phone number"
+            label={field.phone}
             required
             error={errors.phone}
-            hint="Used to reach them, and to match payments sent from this number."
+            hint={d.forms.hint.phoneAdmin}
           >
             {(props) => (
-              <Input name="phone" defaultValue={member?.phone ?? ""} placeholder="0788123456" inputMode="tel" {...props} />
+              <Input name="phone" defaultValue={member?.phone ?? ""} placeholder={d.forms.placeholder.phone} inputMode="tel" {...props} />
             )}
           </Field>
 
           <Field
             id="email"
-            label="Email"
+            label={field.email}
             error={errors.email}
-            hint="Optional. Leave blank if they do not have one."
+            hint={d.forms.hint.emailOptional}
           >
             {(props) => <Input name="email" defaultValue={member?.email ?? ""} type="email" {...props} />}
           </Field>
 
           <Field
             id="nationalId"
-            label="National ID"
+            label={field.nationalId}
             error={errors.nationalId}
-            hint="16 digits. Recording it marks their identity check as pending."
+            hint={d.forms.hint.nationalIdAdmin}
           >
             {(props) => (
               <Input name="nationalId" defaultValue={member?.nationalId ?? ""} inputMode="numeric" maxLength={16} {...props} />
             )}
           </Field>
 
-          <Field id="dateOfBirth" label="Date of birth" error={errors.dateOfBirth}>
+          <Field id="dateOfBirth" label={field.dateOfBirth} error={errors.dateOfBirth}>
             {(props) => <Input name="dateOfBirth" defaultValue={member?.dateOfBirth ?? ""} type="date" {...props} />}
           </Field>
 
-          <Field id="gender" label="Gender" error={errors.gender}>
+          <Field id="gender" label={field.gender} error={errors.gender}>
             {(props) => (
               <select
                 name="gender"
@@ -264,7 +294,7 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
                 className="h-12 w-full rounded-xl border border-border bg-surface px-4 text-[15px] text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 {...props}
               >
-                {GENDERS.map((option) => (
+                {genders.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -275,62 +305,67 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
         </div>
       </Section>
 
-      <Section title="Livelihood" description="What the member does for a living.">
+      <Section title={copy.livelihood} description={copy.livelihoodHint}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="occupation" label="Occupation" error={errors.occupation}>
-            {(props) => <Input name="occupation" defaultValue={member?.occupation ?? ""} placeholder="Tailor" {...props} />}
+          <Field id="occupation" label={field.occupation} error={errors.occupation}>
+            {(props) => <Input name="occupation" defaultValue={member?.occupation ?? ""} placeholder={d.forms.placeholder.occupation} {...props} />}
           </Field>
 
-          <Field id="businessName" label="Business name" error={errors.businessName}>
+          <Field id="businessName" label={field.businessName} error={errors.businessName}>
             {(props) => <Input name="businessName" defaultValue={member?.businessName ?? ""} {...props} />}
           </Field>
         </div>
       </Section>
 
-      <Section title="Address">
+      <Section title={copy.address}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             id="addressLine1"
-            label="Address"
+            label={field.address}
             error={errors.addressLine1}
             className="sm:col-span-2"
           >
             {(props) => <Input name="addressLine1" defaultValue={member?.addressLine1 ?? ""} {...props} />}
           </Field>
 
-          <Field id="city" label="City" error={errors.city}>
-            {(props) => <Input name="city" defaultValue={member?.city ?? ""} placeholder="Kigali" {...props} />}
-          </Field>
+          {/*
+            Rwanda's five provinces and thirty districts, from a fixed list.
+            Transcribing them by hand is how "Kicukiro", "kicukiro" and
+            "Kicukiro District" all end up in the same column.
+          */}
+          <RwandaLocationFields
+            province={location.province}
+            district={location.district}
+            onChange={setLocation}
+            errors={{ province: errors.province, district: errors.district }}
+            withHiddenInputs
+          />
 
-          <Field id="district" label="District" error={errors.district}>
-            {(props) => <Input name="district" defaultValue={member?.district ?? ""} placeholder="Kicukiro" {...props} />}
-          </Field>
-
-          <Field id="province" label="Province" error={errors.province}>
-            {(props) => <Input name="province" defaultValue={member?.province ?? ""} {...props} />}
+          <Field id="city" label={field.city} error={errors.city}>
+            {(props) => <Input name="city" defaultValue={member?.city ?? ""} placeholder={d.forms.placeholder.city} {...props} />}
           </Field>
         </div>
       </Section>
 
       <Section
-        title="Payment identifiers"
-        description="Fallback keys used to attribute a payment that arrives without a reference."
+        title={copy.paymentIdentifiers}
+        description={copy.paymentIdentifiersHint}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             id="mobileMoneyNumber"
-            label="Mobile money number"
+            label={field.mobileMoneyNumber}
             error={errors.mobileMoneyNumber}
-            hint="Leave blank if it is the same as their phone number."
+            hint={d.forms.hint.mobileMoney}
           >
             {(props) => (
-              <Input name="mobileMoneyNumber" defaultValue={member?.mobileMoneyNumber ?? ""} placeholder="0788123456" {...props} />
+              <Input name="mobileMoneyNumber" defaultValue={member?.mobileMoneyNumber ?? ""} placeholder={d.forms.placeholder.phone} {...props} />
             )}
           </Field>
 
           <Field
             id="bankAccountNumber"
-            label="Bank account number"
+            label={field.bankAccountNumber}
             error={errors.bankAccountNumber}
           >
             {(props) => <Input name="bankAccountNumber" defaultValue={member?.bankAccountNumber ?? ""} {...props} />}
@@ -338,39 +373,35 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
         </div>
       </Section>
 
-      <Section title="Next of kin">
+      <Section title={copy.nextOfKin}>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field id="nextOfKinName" label="Full name" error={errors.nextOfKinName}>
+          <Field id="nextOfKinName" label={copy.nextOfKinName} error={errors.nextOfKinName}>
             {(props) => <Input name="nextOfKinName" defaultValue={member?.nextOfKinName ?? ""} {...props} />}
           </Field>
 
-          <Field id="nextOfKinPhone" label="Phone number" error={errors.nextOfKinPhone}>
+          <Field id="nextOfKinPhone" label={copy.nextOfKinPhone} error={errors.nextOfKinPhone}>
             {(props) => (
-              <Input name="nextOfKinPhone" defaultValue={member?.nextOfKinPhone ?? ""} placeholder="0788123456" {...props} />
+              <Input name="nextOfKinPhone" defaultValue={member?.nextOfKinPhone ?? ""} placeholder={d.forms.placeholder.phone} {...props} />
             )}
           </Field>
 
           <Field
             id="nextOfKinRelation"
-            label="Relationship"
+            label={copy.nextOfKinRelation}
             error={errors.nextOfKinRelation}
           >
-            {(props) => <Input name="nextOfKinRelation" defaultValue={member?.nextOfKinRelation ?? ""} placeholder="Spouse" {...props} />}
+            {(props) => <Input name="nextOfKinRelation" defaultValue={member?.nextOfKinRelation ?? ""} placeholder={d.forms.placeholder.relation} {...props} />}
           </Field>
         </div>
       </Section>
 
       <Section
-        title={editing ? "Record the change" : "Enrolment"}
-        description={
-          editing
-            ? "Membership status is changed from the member's file, not here — approving, suspending and reactivating each need their own reason."
-            : "Active members can transact immediately. This decision is recorded against your name."
-        }
+        title={editing ? copy.recordChange : copy.enrolment}
+        description={editing ? copy.recordChangeHint : copy.enrolmentHint}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           {!editing && (
-            <Field id="status" label="Membership status" error={errors.status}>
+            <Field id="status" label={copy.membershipStatus} error={errors.status}>
               {(props) => (
                 <select
                   name="status"
@@ -378,10 +409,8 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
                   className="h-12 w-full rounded-xl border border-border bg-surface px-4 text-[15px] text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                   {...props}
                 >
-                  <option value="ACTIVE">Active — can save and borrow now</option>
-                  <option value="PENDING_APPROVAL">
-                    Pending approval — needs a second check
-                  </option>
+                  <option value="ACTIVE">{copy.statusActive}</option>
+                  <option value="PENDING_APPROVAL">{copy.statusPending}</option>
                 </select>
               )}
             </Field>
@@ -389,13 +418,9 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
 
           <Field
             id="note"
-            label="Note for the audit log"
+            label={copy.noteLabel}
             error={errors.note}
-            hint={
-              editing
-                ? "Optional. Why the details changed — useful when a payment later lands unexpectedly."
-                : "Optional. e.g. where the paper application came from."
-            }
+            hint={editing ? copy.noteHintEdit : copy.noteHintEnrol}
           >
             {(props) => <Textarea name="note" rows={3} {...props} />}
           </Field>
@@ -404,9 +429,7 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
 
       {editing && (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
-          Changing the phone, mobile money or bank account number changes which
-          payments are attributed to this member in future. The old and new
-          values are both written to the audit log.
+          {copy.matchingWarning}
         </p>
       )}
 
@@ -415,24 +438,24 @@ export function MemberForm({ member }: { member?: MemberFormValues }) {
           {submitting ? (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              {editing ? "Saving…" : "Enrolling…"}
+              {editing ? copy.savingChanges : copy.enrolling}
             </>
           ) : editing ? (
             <>
               <Save className="size-4" aria-hidden="true" />
-              Save changes
+              {copy.saveChanges}
             </>
           ) : (
             <>
               <UserPlus className="size-4" aria-hidden="true" />
-              Enrol member
+              {copy.enrol}
             </>
           )}
         </Button>
 
         <Button asChild variant="outline" type="button">
           <Link href={member ? `/admin/members/${member.id}` : "/admin/members"}>
-            Cancel
+            {d.common.cancel}
           </Link>
         </Button>
       </div>

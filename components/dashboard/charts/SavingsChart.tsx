@@ -14,6 +14,9 @@ import {
   YAxis,
 } from "recharts";
 import { formatMoney, formatMoneyCompact } from "@/lib/money";
+import { useLanguage } from "@/components/LanguageProvider";
+import { formatMonthLabel } from "@/lib/i18n/dates";
+import { fill } from "@/lib/i18n/fill";
 
 /**
  * Dashboard charts.
@@ -39,12 +42,6 @@ const MUTED = "#6b7280";
 
 /** Chart-only conversion. Never feed the result back into a stored value. */
 const toPlot = (value: string): number => Number.parseFloat(value) || 0;
-
-function monthLabel(month: string): string {
-  const [year, m] = month.split("-");
-  const date = new Date(Number(year), Number(m) - 1, 1);
-  return date.toLocaleDateString("en-GB", { month: "short" });
-}
 
 const axisProps = {
   stroke: MUTED,
@@ -89,9 +86,14 @@ export function SavingsGrowthChart({
 }: {
   data: { month: string; balance: string }[];
 }) {
-  const plotted = data.map((d) => ({
-    month: monthLabel(d.month),
-    Balance: toPlot(d.balance),
+  const { d: copy, locale } = useLanguage();
+
+  // The series key doubles as its legend and tooltip label, so it is the
+  // translated word rather than a fixed English one.
+  const series = copy.views.charts.balance;
+  const plotted = data.map((point) => ({
+    month: formatMonthLabel(point.month, locale),
+    [series]: toPlot(point.balance),
   }));
 
   return (
@@ -109,7 +111,7 @@ export function SavingsGrowthChart({
         <Tooltip content={<ChartTooltip />} />
         <Area
           type="monotone"
-          dataKey="Balance"
+          dataKey={series}
           stroke={TEAL_DARK}
           strokeWidth={2.5}
           fill="url(#savingsFill)"
@@ -124,10 +126,14 @@ export function ContributionsChart({
 }: {
   data: { month: string; deposits: string; withdrawals: string }[];
 }) {
-  const plotted = data.map((d) => ({
-    month: monthLabel(d.month),
-    Deposits: toPlot(d.deposits),
-    Withdrawals: toPlot(d.withdrawals),
+  const { d: copy, locale } = useLanguage();
+  const depositsKey = copy.views.charts.deposits;
+  const withdrawalsKey = copy.views.charts.withdrawals;
+
+  const plotted = data.map((point) => ({
+    month: formatMonthLabel(point.month, locale),
+    [depositsKey]: toPlot(point.deposits),
+    [withdrawalsKey]: toPlot(point.withdrawals),
   }));
 
   return (
@@ -142,8 +148,13 @@ export function ContributionsChart({
           iconSize={8}
           wrapperStyle={{ fontSize: 12, color: MUTED, paddingTop: 8 }}
         />
-        <Bar dataKey="Deposits" fill={TEAL} radius={[4, 4, 0, 0]} maxBarSize={28} />
-        <Bar dataKey="Withdrawals" fill={AMBER} radius={[4, 4, 0, 0]} maxBarSize={28} />
+        <Bar dataKey={depositsKey} fill={TEAL} radius={[4, 4, 0, 0]} maxBarSize={28} />
+        <Bar
+          dataKey={withdrawalsKey}
+          fill={AMBER}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={28}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -161,6 +172,9 @@ export function RepaymentProgress({
   percent: number;
   overdue?: boolean;
 }) {
+  const { d } = useLanguage();
+  const copy = d.views.charts;
+
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
@@ -168,7 +182,7 @@ export function RepaymentProgress({
           <span className="font-heading text-lg font-bold text-ink">
             {formatMoney(paid)}
           </span>{" "}
-          of {formatMoney(total)} repaid
+          {fill(copy.repaidOf, { total: formatMoney(total) })}
         </p>
         <span
           className={`text-sm font-bold tabular-nums ${overdue ? "text-red-600" : "text-primary"}`}
@@ -183,7 +197,7 @@ export function RepaymentProgress({
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Loan repayment progress"
+        aria-label={copy.progressLabel}
       >
         <div
           className={`h-full rounded-full transition-all ${overdue ? "bg-red-500" : "bg-primary"}`}

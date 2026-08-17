@@ -3,6 +3,9 @@ import { Bell, CheckCheck, Send, TriangleAlert } from "lucide-react";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { listSentNotifications } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -23,7 +26,13 @@ import {
 export const metadata: Metadata = { title: "Notifications | RTA" };
 export const dynamic = "force-dynamic";
 
-/** Turns "PAYMENT_RECEIVED" into "Payment received". */
+/**
+ * Turns "PAYMENT_RECEIVED" into "Payment received".
+ *
+ * Left in English in both languages: these are the event names the ledger and
+ * the audit log use, and an administrator matching a notification to an audit
+ * entry needs the two to read the same.
+ */
 function humanise(value: string): string {
   const lower = value.replace(/_/g, " ").toLowerCase();
   return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -40,6 +49,8 @@ export default async function AdminNotificationsPage({
   );
   const associationId = resolveAssociationScope(context);
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.admin.notifications;
 
   const data = await listSentNotifications(associationId, {
     page: parsePage(params.page),
@@ -52,36 +63,33 @@ export default async function AdminNotificationsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Notifications"
-        description="Everything the system has sent to members, and whether it arrived."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Notifications sent"
+          label={copy.sent}
           value={String(data.total)}
-          hint={`${data.unread} not yet read`}
+          hint={fill(copy.notYetRead, { count: data.unread })}
           icon={Bell}
           tone="primary"
         />
         <StatCard
-          label="Delivered"
+          label={copy.delivered}
           value={String(delivered)}
-          hint="Confirmed by the provider"
+          hint={copy.deliveredHint}
           icon={CheckCheck}
           tone="success"
         />
         <StatCard
-          label="Sent"
+          label={copy.handedOver}
           value={String(sent)}
-          hint="Handed to the provider"
+          hint={copy.handedOverHint}
           icon={Send}
         />
         <StatCard
-          label="Failed deliveries"
+          label={copy.failed}
           value={String(failed)}
-          hint={failed > 0 ? "Members were not reached" : "No delivery failures"}
+          hint={failed > 0 ? copy.failedHint : copy.noFailures}
           icon={TriangleAlert}
           tone={failed > 0 ? "danger" : "success"}
         />
@@ -93,10 +101,10 @@ export default async function AdminNotificationsPage({
         selects={[
           {
             name: "eventType",
-            label: "Event",
+            label: copy.event,
             value: params.eventType,
             options: [
-              { value: "ALL", label: "All events" },
+              { value: "ALL", label: copy.allEvents },
               ...data.eventTypes.map((e) => ({
                 value: e.eventType,
                 label: `${humanise(e.eventType)} (${e.count})`,
@@ -110,20 +118,20 @@ export default async function AdminNotificationsPage({
       {data.notifications.length === 0 ? (
         <EmptyState
           icon={Bell}
-          title="Nothing has been sent yet"
-          description="Notifications are raised automatically when payments are credited, loans are decided and withdrawals are processed."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Recipient</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead>Delivery</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead>Read</TableHead>
+                <TableHead>{copy.colRecipient}</TableHead>
+                <TableHead>{copy.colMessage}</TableHead>
+                <TableHead>{copy.event}</TableHead>
+                <TableHead>{copy.colDelivery}</TableHead>
+                <TableHead>{copy.colSent}</TableHead>
+                <TableHead>{copy.colRead}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -162,7 +170,7 @@ export default async function AdminNotificationsPage({
 
                   <TableCell>
                     {notification.deliveries.length === 0 ? (
-                      <span className="text-xs text-ink-muted">In-app only</span>
+                      <span className="text-xs text-ink-muted">{copy.inAppOnly}</span>
                     ) : (
                       <div className="flex flex-col gap-1">
                         {notification.deliveries.map((delivery, index) => (
@@ -191,11 +199,7 @@ export default async function AdminNotificationsPage({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {notification.createdAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(notification.createdAt, locale)}
                   </TableCell>
 
                   <TableCell>
@@ -204,7 +208,7 @@ export default async function AdminNotificationsPage({
                         notification.read ? "text-emerald-700" : "text-ink-muted"
                       }`}
                     >
-                      {notification.read ? "Read" : "Unread"}
+                      {notification.read ? copy.read : copy.unread}
                     </span>
                   </TableCell>
                 </TableRow>

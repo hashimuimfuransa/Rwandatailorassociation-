@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Activity, CheckCircle2, Clock, TriangleAlert } from "lucide-react";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { listJobRuns } from "@/lib/services/admin-queries";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDateTime } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -23,22 +26,12 @@ import {
 export const metadata: Metadata = { title: "Background jobs | RTA" };
 export const dynamic = "force-dynamic";
 
+/** Units, not words — the same in both languages. */
 function formatDuration(ms: number | null): string {
   if (ms === null) return "—";
   if (ms < 1000) return `${ms}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
   return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
-}
-
-function formatDateTime(value: Date | null): string {
-  return value
-    ? value.toLocaleString("en-GB", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
 }
 
 export default async function PlatformJobsPage({
@@ -48,6 +41,8 @@ export default async function PlatformJobsPage({
 }) {
   await requireSuperAdmin("/super-admin/jobs");
   const params = await searchParams;
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.platform.jobs;
 
   const jobName =
     params.jobName && params.jobName !== "ALL" ? params.jobName : undefined;
@@ -61,52 +56,47 @@ export default async function PlatformJobsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Background jobs"
-        description="Reconciliation, overdue sweeps and every other scheduled task."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {failing.length > 0 && (
-        <Alert variant="error" title="A job's most recent run failed">
-          {failing.map((job) => job.jobName).join(", ")} last failed. While
-          reconciliation is down, member payments are not being credited — this
-          is invisible on every other screen in the system.
+        <Alert variant="error" title={copy.failingTitle}>
+          {fill(copy.failingBody, {
+            jobs: failing.map((job) => job.jobName).join(", "),
+          })}
         </Alert>
       )}
 
       {data.total === 0 && (
-        <Alert variant="warning" title="No job has ever run">
-          The worker does not appear to be running. Start it with{" "}
-          <code>npm run worker</code>; until then, payments will not be
-          reconciled and overdue loans will not be flagged.
+        <Alert variant="warning" title={copy.neverRanTitle}>
+          {copy.neverRanBody}
         </Alert>
       )}
 
       <StatGrid columns={4}>
         <StatCard
-          label="Succeeded (24h)"
+          label={copy.succeeded24h}
           value={String(succeeded24h)}
-          hint="Completed cleanly"
+          hint={copy.completedCleanly}
           icon={CheckCircle2}
           tone="success"
         />
         <StatCard
-          label="Failed (24h)"
+          label={copy.failed24h}
           value={String(failed24h)}
-          hint={failed24h > 0 ? "Investigate below" : "No failures"}
+          hint={failed24h > 0 ? copy.investigateBelow : copy.noFailures}
           icon={TriangleAlert}
           tone={failed24h > 0 ? "danger" : "success"}
         />
         <StatCard
-          label="Currently running"
+          label={copy.currentlyRunning}
           value={String(running.length)}
-          hint={running.map((j) => j.jobName).join(", ") || "Idle"}
+          hint={running.map((j) => j.jobName).join(", ") || copy.idle}
           icon={Clock}
         />
         <StatCard
-          label="Distinct jobs"
+          label={copy.distinctJobs}
           value={String(data.jobNames.length)}
-          hint={`${data.total} run(s) recorded`}
+          hint={pluralize(copy.runsRecorded, data.total)}
           icon={Activity}
           tone="primary"
         />
@@ -116,7 +106,7 @@ export default async function PlatformJobsPage({
       {data.latestByJob.length > 0 && (
         <section>
           <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-            Latest run of each job
+            {copy.latestRuns}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {data.latestByJob.map((job) => (
@@ -131,12 +121,16 @@ export default async function PlatformJobsPage({
                   <StatusBadge status={job.status} size="sm" />
                 </div>
                 <p className="mt-2 text-xs text-ink-muted">
-                  {formatDateTime(job.startedAt)} · {formatDuration(job.durationMs)}
+                  {formatDateTime(job.startedAt, locale)} ·{" "}
+                  {formatDuration(job.durationMs)}
                 </p>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {job.itemsProcessed} processed · {job.itemsSucceeded} ok ·{" "}
+                  {fill(copy.processedLine, {
+                    processed: job.itemsProcessed,
+                    ok: job.itemsSucceeded,
+                  })}
                   <span className={job.itemsFailed > 0 ? "text-red-600" : ""}>
-                    {job.itemsFailed} failed
+                    {job.itemsFailed} {copy.colFailed.toLowerCase()}
                   </span>
                 </p>
                 {job.errorMessage && (
@@ -156,10 +150,10 @@ export default async function PlatformJobsPage({
         selects={[
           {
             name: "jobName",
-            label: "Job",
+            label: copy.job,
             value: jobName,
             options: [
-              { value: "ALL", label: "All jobs" },
+              { value: "ALL", label: copy.allJobs },
               ...data.jobNames.map((j) => ({
                 value: j.jobName,
                 label: `${j.jobName} (${j.runs})`,
@@ -173,21 +167,21 @@ export default async function PlatformJobsPage({
       {data.runs.length === 0 ? (
         <EmptyState
           icon={Activity}
-          title="No job runs recorded"
-          description="Start the background worker with `npm run worker` to begin reconciling payments and sweeping overdue loans."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Job</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead align="right">Processed</TableHead>
-                <TableHead align="right">Succeeded</TableHead>
-                <TableHead align="right">Failed</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.job}</TableHead>
+                <TableHead>{copy.colStarted}</TableHead>
+                <TableHead>{copy.colDuration}</TableHead>
+                <TableHead align="right">{copy.colProcessed}</TableHead>
+                <TableHead align="right">{copy.colSucceeded}</TableHead>
+                <TableHead align="right">{copy.colFailed}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -202,7 +196,7 @@ export default async function PlatformJobsPage({
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {formatDateTime(run.startedAt)}
+                    {formatDateTime(run.startedAt, locale)}
                   </TableCell>
                   <TableCell className="text-sm text-ink-muted">
                     {formatDuration(run.durationMs)}

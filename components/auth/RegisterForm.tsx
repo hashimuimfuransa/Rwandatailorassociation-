@@ -15,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { RwandaLocationFields } from "@/components/ui/rwanda-location-fields";
+import { useLanguage } from "@/components/LanguageProvider";
+import { split } from "@/lib/i18n/fill";
 import { assessPasswordStrength } from "@/lib/auth/password.shared";
 import { isValidRwandanPhone } from "@/lib/phone";
 
@@ -25,6 +28,11 @@ import { isValidRwandanPhone } from "@/lib/phone";
  * Applications now land directly in the association's database, which is what
  * lets an administrator review them, and what gives each applicant a payment
  * reference — the key every incoming payment is matched on.
+ *
+ * Fully bilingual, including the validation messages. This is the first screen
+ * a prospective member ever sees, and many tailors read Kinyarwanda far more
+ * comfortably than English; a form that asks in Kinyarwanda and then rejects
+ * the answer in English would lose them at the last step.
  */
 
 interface SuccessState {
@@ -40,12 +48,17 @@ const INITIAL = {
   phone: "",
   nationalId: "",
   occupation: "",
+  province: "",
   district: "",
   password: "",
   confirmPassword: "",
 };
 
 export default function RegisterForm() {
+  const { d } = useLanguage();
+  const copy = d.forms.register;
+  const field = d.forms.field;
+
   const [values, setValues] = useState(INITIAL);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -55,12 +68,12 @@ export default function RegisterForm() {
   const [success, setSuccess] = useState<SuccessState | null>(null);
   const [copied, setCopied] = useState(false);
 
-  function update(field: keyof typeof INITIAL, value: string) {
-    setValues((prev) => ({ ...prev, [field]: value }));
+  function update(name: keyof typeof INITIAL, value: string) {
+    setValues((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => {
-      if (!prev[field]) return prev;
+      if (!prev[name]) return prev;
       const next = { ...prev };
-      delete next[field];
+      delete next[name];
       return next;
     });
   }
@@ -68,27 +81,31 @@ export default function RegisterForm() {
   function validate(): boolean {
     const next: Record<string, string[]> = {};
 
-    if (values.firstName.trim().length < 2) next.firstName = ["Enter your first name"];
-    if (values.lastName.trim().length < 2) next.lastName = ["Enter your last name"];
+    if (values.firstName.trim().length < 2) next.firstName = [copy.error.firstName];
+    if (values.lastName.trim().length < 2) next.lastName = [copy.error.lastName];
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(values.email.trim())) {
-      next.email = ["Enter a valid email address"];
+      next.email = [copy.error.email];
     }
     if (!isValidRwandanPhone(values.phone)) {
-      next.phone = ["Enter a valid Rwandan mobile number, e.g. 0788123456"];
+      next.phone = [copy.error.phone];
     }
     if (values.nationalId && !/^\d{16}$/.test(values.nationalId.trim())) {
-      next.nationalId = ["The national ID must be 16 digits"];
+      next.nationalId = [copy.error.nationalId];
     }
 
+    // The strength assessment reports its own reasons, which are English-only
+    // because they are shared with the server. The translated line stands in
+    // for them rather than beside them, so the message is never half a
+    // language behind.
     const strength = assessPasswordStrength(values.password);
     if (!strength.acceptable) {
-      next.password = strength.issues.length ? strength.issues : ["Choose a stronger password"];
+      next.password = [copy.error.password];
     }
     if (values.password !== values.confirmPassword) {
-      next.confirmPassword = ["Passwords do not match"];
+      next.confirmPassword = [copy.error.confirmPassword];
     }
     if (!acceptedTerms) {
-      next.acceptedTerms = ["You must accept the association rules to register"];
+      next.acceptedTerms = [copy.error.terms];
     }
 
     setErrors(next);
@@ -114,19 +131,21 @@ export default function RegisterForm() {
 
       if (!response.ok) {
         if (payload?.error?.details) setErrors(payload.error.details);
-        setFormError(payload?.error?.message ?? "Could not submit your application.");
+        setFormError(payload?.error?.message ?? copy.failed);
         setSubmitting(false);
         return;
       }
 
       setSuccess(payload as SuccessState);
     } catch {
-      setFormError("Could not reach the server. Check your connection and try again.");
+      setFormError(d.common.serverUnreachable);
       setSubmitting(false);
     }
   }
 
   if (success) {
+    const [keepBefore, keepAfter] = split(copy.keepReferenceBody, "reference");
+
     return (
       <div className="mx-auto mt-10 max-w-2xl">
         <div className="rounded-2xl border border-border bg-surface p-8 shadow-card sm:p-10">
@@ -135,7 +154,7 @@ export default function RegisterForm() {
           </span>
 
           <h3 className="mt-6 font-heading text-2xl font-bold text-ink">
-            Application received
+            {copy.successTitle}
           </h3>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
             {success.message}
@@ -144,7 +163,7 @@ export default function RegisterForm() {
           <dl className="mt-8 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-background p-4">
               <dt className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                Membership number
+                {copy.membershipNumber}
               </dt>
               <dd className="mt-1.5 font-heading text-lg font-bold text-ink">
                 {success.memberNumber}
@@ -153,7 +172,7 @@ export default function RegisterForm() {
 
             <div className="rounded-xl border border-primary/25 bg-primary-50 p-4">
               <dt className="text-xs font-semibold uppercase tracking-wider text-primary-hover">
-                Your payment reference
+                {copy.paymentReference}
               </dt>
               <dd className="mt-1.5 flex items-center gap-2">
                 <span className="font-heading text-lg font-bold text-primary-hover">
@@ -167,7 +186,7 @@ export default function RegisterForm() {
                     setTimeout(() => setCopied(false), 2000);
                   }}
                   className="rounded-lg p-1.5 text-primary transition-colors hover:bg-primary/10"
-                  aria-label="Copy payment reference"
+                  aria-label={copy.copyReference}
                 >
                   {copied ? (
                     <CheckCircle2 className="size-4" aria-hidden="true" />
@@ -185,18 +204,18 @@ export default function RegisterForm() {
             and waits in an administrator's unmatched queue.
           */}
           <Alert variant="info" className="mt-6">
-            <strong className="font-semibold">Keep your payment reference.</strong>{" "}
-            Quote <strong>{success.paymentReference}</strong> on every payment you
-            make to the association. It is how your contribution is matched to
-            your savings account.
+            <strong className="font-semibold">{copy.keepReferenceTitle}</strong>{" "}
+            {keepBefore}
+            <strong>{success.paymentReference}</strong>
+            {keepAfter}
           </Alert>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild className="flex-1">
-              <Link href="/login">Go to sign in</Link>
+              <Link href="/login">{copy.goToSignIn}</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
-              <Link href="/">Back to homepage</Link>
+              <Link href="/">{copy.backHome}</Link>
             </Button>
           </div>
         </div>
@@ -217,36 +236,36 @@ export default function RegisterForm() {
       )}
 
       <fieldset className="space-y-5" disabled={submitting}>
-        <legend className="sr-only">Your details</legend>
+        <legend className="sr-only">{copy.legend}</legend>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="firstName" label="First name" error={errors.firstName} required>
+          <Field id="firstName" label={field.firstName} error={errors.firstName} required>
             {(props) => (
               <Input
                 {...props}
                 value={values.firstName}
                 onChange={(e) => update("firstName", e.target.value)}
                 autoComplete="given-name"
-                placeholder="Jean"
+                placeholder={d.forms.placeholder.firstName}
               />
             )}
           </Field>
 
-          <Field id="lastName" label="Last name" error={errors.lastName} required>
+          <Field id="lastName" label={field.lastName} error={errors.lastName} required>
             {(props) => (
               <Input
                 {...props}
                 value={values.lastName}
                 onChange={(e) => update("lastName", e.target.value)}
                 autoComplete="family-name"
-                placeholder="Uwimana"
+                placeholder={d.forms.placeholder.lastName}
               />
             )}
           </Field>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="email" label="Email address" error={errors.email} required>
+          <Field id="email" label={field.email} error={errors.email} required>
             {(props) => (
               <Input
                 {...props}
@@ -254,16 +273,16 @@ export default function RegisterForm() {
                 value={values.email}
                 onChange={(e) => update("email", e.target.value)}
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={d.forms.placeholder.email}
               />
             )}
           </Field>
 
           <Field
             id="phone"
-            label="Mobile number"
+            label={field.phone}
             error={errors.phone}
-            hint="Used for payment matching and SMS alerts"
+            hint={d.forms.hint.phoneRegister}
             required
           >
             {(props) => (
@@ -273,7 +292,7 @@ export default function RegisterForm() {
                 value={values.phone}
                 onChange={(e) => update("phone", e.target.value)}
                 autoComplete="tel"
-                placeholder="0788123456"
+                placeholder={d.forms.placeholder.phone}
               />
             )}
           </Field>
@@ -282,9 +301,9 @@ export default function RegisterForm() {
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
             id="nationalId"
-            label="National ID"
+            label={field.nationalId}
             error={errors.nationalId}
-            hint="16 digits — optional, speeds up verification"
+            hint={d.forms.hint.nationalIdRegister}
           >
             {(props) => (
               <Input
@@ -292,39 +311,44 @@ export default function RegisterForm() {
                 inputMode="numeric"
                 value={values.nationalId}
                 onChange={(e) => update("nationalId", e.target.value)}
-                placeholder="1199012345678901"
+                placeholder={d.forms.placeholder.nationalId}
                 maxLength={16}
               />
             )}
           </Field>
 
-          <Field id="district" label="District" error={errors.district}>
+          <Field id="occupation" label={field.occupation} error={errors.occupation}>
             {(props) => (
               <Input
                 {...props}
-                value={values.district}
-                onChange={(e) => update("district", e.target.value)}
-                placeholder="Kicukiro"
+                value={values.occupation}
+                onChange={(e) => update("occupation", e.target.value)}
+                placeholder={d.forms.placeholder.occupation}
               />
             )}
           </Field>
         </div>
 
-        <Field id="occupation" label="Occupation or business" error={errors.occupation}>
-          {(props) => (
-            <Input
-              {...props}
-              value={values.occupation}
-              onChange={(e) => update("occupation", e.target.value)}
-              placeholder="Tailor, fashion designer, textile trader…"
-            />
-          )}
-        </Field>
+        {/*
+          Chosen from a list rather than typed, so the association's district
+          breakdowns actually add up. Picking a district fills in its province.
+        */}
+        <div className="grid gap-5 sm:grid-cols-2">
+          <RwandaLocationFields
+            province={values.province}
+            district={values.district}
+            onChange={({ province, district }) =>
+              setValues((prev) => ({ ...prev, province, district }))
+            }
+            errors={{ province: errors.province, district: errors.district }}
+            districtHint={d.forms.hint.districtRegister}
+          />
+        </div>
 
         <hr className="border-border" />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="password" label="Password" error={errors.password} required>
+          <Field id="password" label={field.password} error={errors.password} required>
             {(props) => (
               <div className="relative">
                 <Input
@@ -333,13 +357,13 @@ export default function RegisterForm() {
                   value={values.password}
                   onChange={(e) => update("password", e.target.value)}
                   autoComplete="new-password"
-                  placeholder="At least 10 characters"
+                  placeholder={d.forms.placeholder.password}
                   className="pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? copy.hidePassword : copy.showPassword}
                   className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
                 >
                   {showPassword ? (
@@ -354,7 +378,7 @@ export default function RegisterForm() {
 
           <Field
             id="confirmPassword"
-            label="Confirm password"
+            label={field.confirmPassword}
             error={errors.confirmPassword}
             required
           >
@@ -365,7 +389,7 @@ export default function RegisterForm() {
                 value={values.confirmPassword}
                 onChange={(e) => update("confirmPassword", e.target.value)}
                 autoComplete="new-password"
-                placeholder="Re-enter your password"
+                placeholder={d.forms.placeholder.confirmPassword}
               />
             )}
           </Field>
@@ -389,8 +413,7 @@ export default function RegisterForm() {
               className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-border accent-[var(--color-primary)]"
             />
             <span className="text-sm leading-relaxed text-ink-muted">
-              I confirm the details above are correct and I accept the Rwanda
-              Tailors Association savings and loan rules.
+              {copy.terms}
             </span>
           </label>
 
@@ -406,23 +429,23 @@ export default function RegisterForm() {
         {submitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            Submitting application…
+            {copy.submitting}
           </>
         ) : (
           <>
             <UserPlus className="size-4" aria-hidden="true" />
-            Submit membership application
+            {copy.submit}
           </>
         )}
       </Button>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
-        Already a member?{" "}
+        {copy.alreadyMember}{" "}
         <Link
           href="/login"
           className="font-semibold text-primary underline-offset-4 hover:underline"
         >
-          Sign in
+          {copy.signIn}
         </Link>
       </p>
     </form>

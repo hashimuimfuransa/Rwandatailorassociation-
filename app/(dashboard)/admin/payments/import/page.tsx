@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Info } from "lucide-react";
 import { requirePermission } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getDashboardCopy } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Alert } from "@/components/ui/alert";
 import { StatementImport } from "@/components/dashboard/StatementImport";
@@ -14,38 +15,27 @@ export default async function StatementImportPage() {
     PERMISSIONS.PAYMENTS_RECONCILE,
     "/admin/payments/import"
   );
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.import;
 
   const canImport = context.permissions.has(PERMISSIONS.PAYMENTS_MATCH_MANUAL);
 
   return (
     <div>
-      <PageHeader
-        title="Import bank statement"
-        description="Upload a PDF statement to credit members who have paid."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       {!canImport && (
         <Alert variant="warning" className="mb-5">
-          You can upload and preview a statement, but you do not have permission
-          to commit an import. Ask a super administrator for the
-          &ldquo;Match payments manually&rdquo; permission.
+          {copy.noPermission}
         </Alert>
       )}
 
-      <Alert variant="info" className="mb-5" title="How this works">
+      <Alert variant="info" className="mb-5" title={copy.howTitle}>
         <ol className="mt-1 list-inside list-decimal space-y-1">
-          <li>Upload the PDF statement from your association&rsquo;s bank account.</li>
-          <li>
-            Review every row. The system shows which member each payment would be
-            credited to, and why.
-          </li>
-          <li>
-            Tick the rows you have checked and confirm. Only ticked rows are
-            imported.
-          </li>
-          <li>
-            Members are credited and receive an SMS confirming their new balance.
-          </li>
+          <li>{copy.step1}</li>
+          <li>{copy.step2}</li>
+          <li>{copy.step3}</li>
+          <li>{copy.step4}</li>
         </ol>
       </Alert>
 
@@ -55,19 +45,11 @@ export default async function StatementImportPage() {
         <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
         <div className="text-sm leading-relaxed text-ink-muted">
           <p>
-            <strong className="text-ink">The PDF must be a digital statement</strong>,
-            not a scan or a photograph. A scanned image contains no text to read.
-            If your bank only provides scans, ask for the PDF or CSV export from
-            internet banking.
+            <strong className="text-ink">{copy.digitalOnly}</strong>
+            {copy.digitalOnlyBody}
           </p>
-          <p className="mt-2">
-            Re-uploading the same statement is safe. Rows already imported are
-            detected and skipped, so nobody is credited twice.
-          </p>
-          <p className="mt-2">
-            Only <strong className="text-ink">credits</strong> can be member
-            contributions. Debits are shown for context but never imported.
-          </p>
+          <p className="mt-2">{copy.reuploadSafe}</p>
+          <p className="mt-2">{copy.creditsOnly}</p>
         </div>
       </div>
     </div>

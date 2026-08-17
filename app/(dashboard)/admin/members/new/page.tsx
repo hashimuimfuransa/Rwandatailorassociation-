@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requirePermission, resolveAssociationScope } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ export default async function NewMemberPage() {
     "/admin/members/new"
   );
   const associationId = resolveAssociationScope(context);
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.members;
 
   // A super admin browsing platform-wide has no single register to add to,
   // and guessing one would put the member in the wrong association.
@@ -23,12 +27,11 @@ export default async function NewMemberPage() {
     return (
       <div>
         <PageHeader
-          title="Enrol a member"
-          description="Add someone to the association's register."
+          title={copy.newTitle}
+          description={copy.newDescriptionPlain}
         />
-        <Alert variant="info" title="No association selected">
-          Members belong to one association. Open an association from the
-          platform directory before enrolling anyone.
+        <Alert variant="info" title={copy.noAssociationTitle}>
+          {copy.noAssociationBody}
         </Alert>
       </div>
     );
@@ -37,11 +40,13 @@ export default async function NewMemberPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Enrol a member"
-        description={`Add someone to ${context.association?.name ?? "the association"}'s register directly, without waiting for them to sign up.`}
+        title={copy.newTitle}
+        description={fill(copy.newDescription, {
+          association: context.association?.name ?? d.nav.association,
+        })}
         actions={
           <Button asChild variant="outline" size="sm">
-            <Link href="/admin/members">Back to register</Link>
+            <Link href="/admin/members">{copy.backToRegister}</Link>
           </Button>
         }
       />

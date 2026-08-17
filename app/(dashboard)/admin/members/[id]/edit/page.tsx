@@ -7,6 +7,8 @@ import {
 } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getMemberProfile } from "@/lib/services/members";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { MemberForm } from "@/components/dashboard/MemberForm";
@@ -45,14 +47,19 @@ export default async function EditMemberPage({
   // rather than assumed.
   assertSameAssociation(context, member, "Member");
 
+  const { d } = await getDashboardCopy();
+  const copy = d.admin.members;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Edit ${member.user.firstName} ${member.user.lastName}`.trim()}
-        description={`Member ${member.memberNumber}. Their member number and payment reference cannot be changed — those are printed on every payment instruction they hold.`}
+        title={fill(copy.editTitle, {
+          name: `${member.user.firstName} ${member.user.lastName}`.trim(),
+        })}
+        description={fill(copy.editDescription, { number: member.memberNumber })}
         actions={
           <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/members/${member.id}`}>Back to member file</Link>
+            <Link href={`/admin/members/${member.id}`}>{copy.backToFile}</Link>
           </Button>
         }
       />

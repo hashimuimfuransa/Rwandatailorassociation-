@@ -14,6 +14,9 @@ import {
 import { requireMember } from "@/lib/auth/guards";
 import { getMemberDashboard } from "@/lib/services/member-dashboard";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -43,14 +46,17 @@ export const dynamic = "force-dynamic";
 
 export default async function MemberDashboardPage() {
   const context = await requireMember("/dashboard");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.overview;
+
   const data = await getMemberDashboard(context.member!.id, context.user.id);
 
   if (!data) {
     return (
       <EmptyState
         icon={Wallet}
-        title="No savings account yet"
-        description="Your membership is active but no savings account has been opened. Please contact your association administrator."
+        title={copy.noAccountTitle}
+        description={copy.noAccountBody}
       />
     );
   }
@@ -68,31 +74,37 @@ export default async function MemberDashboardPage() {
       {/* Greeting */}
       <div>
         <h1 className="font-heading text-2xl font-bold text-ink">
-          Welcome, {firstName}
+          {fill(copy.welcome, { name: firstName })}
         </h1>
         <p className="mt-1 text-[15px] text-ink-muted">
           {savings.lastTransactionAt
-            ? `Last activity on your account: ${formatDate(savings.lastTransactionAt)}`
-            : "Here is your account. Make your first contribution to get started."}
+            ? fill(copy.lastActivity, {
+                date: formatDate(savings.lastTransactionAt, locale),
+              })
+            : copy.firstContribution}
         </p>
       </div>
 
       {loan.daysOverdue > 0 && (
-        <Alert variant="error" title="Your loan repayment is overdue">
-          Your loan is {loan.daysOverdue} day{loan.daysOverdue === 1 ? "" : "s"} past
-          due. Penalties may apply until it is settled.{" "}
+        <Alert variant="error" title={copy.overdueTitle}>
+          {pluralize(copy.overdueBody, loan.daysOverdue, { days: loan.daysOverdue })}{" "}
           <Link href="/dashboard/loans/repayments" className="font-semibold underline">
-            Make a repayment
+            {copy.makeRepayment}
           </Link>
         </Alert>
       )}
 
       {application && (
-        <Alert variant="info" title={`Loan application ${application.reference}`}>
-          Your request for {formatMoney(application.requestedAmount)} is{" "}
-          <strong>{application.status.toLowerCase().replace(/_/g, " ")}</strong>.{" "}
+        <Alert
+          variant="info"
+          title={fill(copy.applicationTitle, { reference: application.reference })}
+        >
+          {fill(copy.applicationBody, {
+            amount: formatMoney(application.requestedAmount),
+            status: application.status.toLowerCase().replace(/_/g, " "),
+          })}{" "}
           <Link href="/dashboard/loans" className="font-semibold underline">
-            View details
+            {copy.viewDetails}
           </Link>
         </Alert>
       )}
@@ -100,48 +112,51 @@ export default async function MemberDashboardPage() {
       {/* Headline figures */}
       <StatGrid columns={4}>
         <StatCard
-          label="Savings balance"
+          label={copy.savingsBalance}
           value={formatMoney(savings.balance)}
-          hint={`Available: ${formatMoney(savings.available)}`}
+          hint={fill(copy.availableHint, {
+            amount: formatMoney(savings.available),
+          })}
           icon={PiggyBank}
           tone="primary"
           href="/dashboard/savings"
         />
 
         <StatCard
-          label="Active loan"
-          value={loan.hasActiveLoan ? formatMoney(loan.principal) : "None"}
-          hint={loan.reference ?? "No loan currently running"}
+          label={copy.activeLoan}
+          value={loan.hasActiveLoan ? formatMoney(loan.principal) : d.common.none}
+          hint={loan.reference ?? copy.noLoanRunning}
           icon={HandCoins}
-          tone={loan.hasActiveLoan ? "default" : "default"}
           href="/dashboard/loans"
         />
 
         <StatCard
-          label="Outstanding loan"
+          label={copy.outstandingLoan}
           value={formatMoney(loan.outstanding)}
           hint={
             loan.hasActiveLoan
-              ? `${loan.progressPercent}% repaid`
-              : "Nothing owed"
+              ? fill(copy.repaidPercent, { percent: loan.progressPercent })
+              : copy.nothingOwed
           }
           icon={Receipt}
           tone={loan.daysOverdue > 0 ? "danger" : "default"}
         />
 
         <StatCard
-          label="Next repayment"
+          label={copy.nextRepayment}
           value={
             loan.nextInstalment ? formatMoney(loan.nextInstalment.amount) : "—"
           }
           hint={
             loan.nextInstalment
-              ? `Due ${formatDate(loan.nextInstalment.dueDate)}${
+              ? `${fill(copy.dueOn, {
+                  date: formatDate(loan.nextInstalment.dueDate, locale),
+                })}${
                   dueSoon !== null && dueSoon >= 0 && dueSoon <= 7
-                    ? ` · in ${dueSoon} day${dueSoon === 1 ? "" : "s"}`
+                    ? ` · ${pluralize(copy.dueInDays, dueSoon, { days: dueSoon })}`
                     : ""
                 }`
-              : "No repayment scheduled"
+              : copy.noRepaymentScheduled
           }
           icon={CalendarClock}
           tone={
@@ -158,49 +173,51 @@ export default async function MemberDashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card lg:col-span-2">
           <h2 className="font-heading text-base font-semibold text-ink">
-            Quick actions
+            {copy.quickActions}
           </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <Button asChild variant="outline" className="h-auto justify-start py-3">
               <Link href="/dashboard/savings/deposit">
                 <ArrowDownToLine className="size-4 text-primary" aria-hidden="true" />
-                Make a deposit
+                {copy.makeDeposit}
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto justify-start py-3">
               <Link href="/dashboard/withdrawals">
                 <ArrowUpFromLine className="size-4 text-primary" aria-hidden="true" />
-                Request withdrawal
+                {copy.requestWithdrawal}
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto justify-start py-3">
               <Link href="/dashboard/loans/apply">
                 <HandCoins className="size-4 text-primary" aria-hidden="true" />
-                Apply for a loan
+                {copy.applyLoan}
               </Link>
             </Button>
           </div>
 
           <div className="mt-5 rounded-xl border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              How much can I borrow?
+              {copy.borrowQuestion}
             </p>
             {borrowing.meetsMinimum ? (
               <p className="mt-1.5 text-sm text-ink-muted">
-                Up to{" "}
+                {copy.borrowUpTo}{" "}
                 <span className="font-heading text-lg font-bold text-ink">
                   {formatMoney(borrowing.maxEligible)}
                 </span>{" "}
-                under {borrowing.productName}. Final approval depends on your
-                contribution history and the association&rsquo;s review.
+                {fill(copy.borrowUnder, { product: borrowing.productName ?? "" })}
               </p>
             ) : (
               <p className="mt-1.5 text-sm text-ink-muted">
-                You need at least{" "}
-                <strong className="text-ink">{formatMoney(borrowing.minimumSavings)}</strong>{" "}
-                in savings to qualify
-                {borrowing.productName ? ` for ${borrowing.productName}` : ""}. You
-                currently have {formatMoney(savings.balance)}.
+                {copy.borrowNeedMinimum}{" "}
+                <strong className="text-ink">
+                  {formatMoney(borrowing.minimumSavings)}
+                </strong>{" "}
+                {fill(copy.borrowCurrentBalance, {
+                  product: borrowing.productName ? ` (${borrowing.productName})` : "",
+                  balance: formatMoney(savings.balance),
+                })}
               </p>
             )}
           </div>
@@ -211,33 +228,29 @@ export default async function MemberDashboardPage() {
 
       {/* Charts */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <ChartCard
-          title="Savings growth"
-          description="Closing balance at the end of each month"
-        >
+        <ChartCard title={copy.savingsGrowth} description={copy.savingsGrowthHint}>
           {monthlySavings.length > 0 ? (
             <SavingsGrowthChart data={monthlySavings} />
           ) : (
-            <ChartPlaceholder message="Your savings growth will appear here after your first contribution." />
+            <ChartPlaceholder message={copy.savingsGrowthEmpty} />
           )}
         </ChartCard>
 
-        <ChartCard
-          title="Monthly contributions"
-          description="Deposits and withdrawals over the last 12 months"
-        >
+        <ChartCard title={copy.contributions} description={copy.contributionsHint}>
           {monthlySavings.length > 0 ? (
             <ContributionsChart data={monthlySavings} />
           ) : (
-            <ChartPlaceholder message="Contribution history will appear here once you start saving." />
+            <ChartPlaceholder message={copy.contributionsEmpty} />
           )}
         </ChartCard>
       </div>
 
       {loan.hasActiveLoan && (
         <ChartCard
-          title="Loan repayment progress"
-          description={`${loan.reference} · ${formatMoney(loan.totalPayable)} total payable`}
+          title={copy.repaymentProgress}
+          description={`${loan.reference} · ${fill(copy.totalPayableHint, {
+            amount: formatMoney(loan.totalPayable),
+          })}`}
         >
           <div className="pt-2">
             <RepaymentProgress
@@ -254,13 +267,13 @@ export default async function MemberDashboardPage() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold text-ink">
-            Recent transactions
+            {copy.recentTransactions}
           </h2>
           <Link
             href="/dashboard/savings/transactions"
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            View all
+            {d.common.viewAll}
             <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         </div>
@@ -268,11 +281,13 @@ export default async function MemberDashboardPage() {
         {recentTransactions.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="No transactions yet"
-            description={`Make your first contribution using payment reference ${data.paymentReference} and it will appear here.`}
+            title={copy.noTransactions}
+            description={fill(copy.noTransactionsHint, {
+              reference: data.paymentReference,
+            })}
             action={
               <Button asChild>
-                <Link href="/dashboard/savings/deposit">Make a deposit</Link>
+                <Link href="/dashboard/savings/deposit">{copy.makeDeposit}</Link>
               </Button>
             }
           />
@@ -281,12 +296,12 @@ export default async function MemberDashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead align="right">Amount</TableHead>
-                  <TableHead align="right">Balance</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{d.common.reference}</TableHead>
+                  <TableHead>{d.common.date}</TableHead>
+                  <TableHead>{d.common.type}</TableHead>
+                  <TableHead align="right">{d.common.amount}</TableHead>
+                  <TableHead align="right">{d.common.balance}</TableHead>
+                  <TableHead>{d.common.status}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,7 +311,7 @@ export default async function MemberDashboardPage() {
                       {t.reference}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {formatDate(t.createdAt)}
+                      {formatDate(t.createdAt, locale)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={t.type} size="sm" />
@@ -359,14 +374,6 @@ function ChartPlaceholder({ message }: { message: string }) {
       <p className="max-w-xs px-4 text-sm text-ink-muted">{message}</p>
     </div>
   );
-}
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function daysUntil(date: Date): number {

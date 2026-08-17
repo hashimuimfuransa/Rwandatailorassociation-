@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { normalisePhone } from "@/lib/phone";
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from "@/lib/auth/password.shared";
+import {
+  checkDistrictInProvince,
+  optionalDistrict,
+  optionalProvince,
+} from "@/lib/validation/rwanda";
 
 /**
  * Auth request schemas.
@@ -74,7 +79,10 @@ export const registerSchema = z
       .optional()
       .or(z.literal("").transform(() => undefined)),
     occupation: z.string().trim().max(120).optional(),
-    district: z.string().trim().max(80).optional(),
+    // Both come from linked dropdowns, so anything unrecognised is either a
+    // crafted request or a stale client — either way it is not saved.
+    province: optionalProvince(),
+    district: optionalDistrict(),
     password: passwordSchema,
     confirmPassword: z.string(),
     acceptedTerms: z
@@ -84,7 +92,8 @@ export const registerSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
-  });
+  })
+  .superRefine(checkDistrictInProvince);
 
 export const forgotPasswordSchema = z.object({
   identifier: identifierSchema,

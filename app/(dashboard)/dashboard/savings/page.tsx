@@ -17,6 +17,9 @@ import {
   getMemberTransactions,
 } from "@/lib/services/member-queries";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -38,14 +41,17 @@ export const dynamic = "force-dynamic";
 
 export default async function MemberSavingsPage() {
   const context = await requireMember("/dashboard/savings");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.member.savings;
+
   const account = await getMemberSavingsAccount(context.member!.id);
 
   if (!account) {
     return (
       <EmptyState
         icon={Wallet}
-        title="No savings account"
-        description="No savings account has been opened for your membership yet. Please contact your association administrator."
+        title={copy.noAccountTitle}
+        description={copy.noAccountBody}
       />
     );
   }
@@ -55,20 +61,23 @@ export default async function MemberSavingsPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        title="My savings"
-        description={`Account ${account.accountNumber} · opened ${formatDate(account.openedAt)}`}
+        title={copy.title}
+        description={fill(copy.accountOpened, {
+          number: account.accountNumber,
+          date: formatDate(account.openedAt, locale),
+        })}
         actions={
           <>
             <Button asChild variant="outline" size="sm">
               <Link href="/dashboard/statements">
                 <FileText className="size-4" aria-hidden="true" />
-                Statement
+                {copy.statement}
               </Link>
             </Button>
             <Button asChild size="sm">
               <Link href="/dashboard/savings/deposit">
                 <ArrowDownToLine className="size-4" aria-hidden="true" />
-                Deposit
+                {copy.deposit}
               </Link>
             </Button>
           </>
@@ -77,33 +86,35 @@ export default async function MemberSavingsPage() {
 
       <StatGrid columns={4}>
         <StatCard
-          label="Current balance"
+          label={copy.currentBalance}
           value={formatMoney(account.balance)}
-          hint={`${account.transactionCount} transactions`}
+          hint={fill(copy.transactionCount, { count: account.transactionCount })}
           icon={PiggyBank}
           tone="primary"
         />
         <StatCard
-          label="Available"
+          label={copy.available}
           value={formatMoney(account.available)}
           hint={
             Number(account.lockedBalance) > 0
-              ? `${formatMoney(account.lockedBalance)} pledged`
-              : "Nothing pledged"
+              ? fill(copy.pledged, {
+                  amount: formatMoney(account.lockedBalance),
+                })
+              : copy.nothingPledged
           }
           icon={Wallet}
         />
         <StatCard
-          label="Total contributed"
+          label={copy.totalContributed}
           value={formatMoney(account.totalDeposits)}
-          hint="Lifetime deposits"
+          hint={copy.lifetimeDeposits}
           icon={TrendingUp}
           tone="success"
         />
         <StatCard
-          label="Total withdrawn"
+          label={copy.totalWithdrawn}
           value={formatMoney(account.totalWithdrawals)}
-          hint="Lifetime withdrawals"
+          hint={copy.lifetimeWithdrawals}
           icon={ArrowUpFromLine}
         />
       </StatGrid>
@@ -112,9 +123,8 @@ export default async function MemberSavingsPage() {
         <div className="flex items-start gap-3 rounded-2xl border border-gold/40 bg-gold/[0.07] p-4">
           <Lock className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden="true" />
           <p className="text-sm leading-relaxed text-amber-900">
-            <strong>{formatMoney(account.lockedBalance)}</strong> of your balance is
-            pledged against an active loan or a pending withdrawal, so it cannot be
-            withdrawn until that is settled.
+            <strong>{formatMoney(account.lockedBalance)}</strong>{" "}
+            {copy.pledgedNotice}
           </p>
         </div>
       )}
@@ -123,33 +133,33 @@ export default async function MemberSavingsPage() {
         <ActionTile
           href="/dashboard/savings/deposit"
           icon={ArrowDownToLine}
-          title="Make a deposit"
-          detail="How to pay, and your reference"
+          title={copy.tileDeposit}
+          detail={copy.tileDepositHint}
         />
         <ActionTile
           href="/dashboard/withdrawals"
           icon={ArrowUpFromLine}
-          title="Request a withdrawal"
-          detail="Subject to association approval"
+          title={copy.tileWithdraw}
+          detail={copy.tileWithdrawHint}
         />
         <ActionTile
           href="/dashboard/savings/transactions"
           icon={Receipt}
-          title="All transactions"
-          detail="Search and filter your history"
+          title={copy.tileTransactions}
+          detail={copy.tileTransactionsHint}
         />
       </div>
 
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold text-ink">
-            Recent activity
+            {copy.recentActivity}
           </h2>
           <Link
             href="/dashboard/savings/transactions"
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            View all
+            {d.common.viewAll}
             <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         </div>
@@ -158,20 +168,19 @@ export default async function MemberSavingsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Balance</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
+                <TableHead>{d.common.description}</TableHead>
+                <TableHead>{d.common.type}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{d.common.balance}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recent.transactions.length === 0 ? (
                 <TableEmpty colSpan={6}>
-                  No transactions yet. Quote reference{" "}
-                  <strong>{context.member!.paymentReference}</strong> on your first
-                  payment.
+                  {copy.noTransactionsQuote}{" "}
+                  <strong>{context.member!.paymentReference}</strong>.
                 </TableEmpty>
               ) : (
                 recent.transactions.map((t) => (
@@ -180,7 +189,7 @@ export default async function MemberSavingsPage() {
                       {t.reference}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {formatDate(t.createdAt)}
+                      {formatDate(t.createdAt, locale)}
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-sm">
                       {t.description ?? "—"}
@@ -239,13 +248,4 @@ function ActionTile({
       </span>
     </Link>
   );
-}
-
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }

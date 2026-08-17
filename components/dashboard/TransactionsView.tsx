@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Receipt } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/dates";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TransactionFilters } from "@/components/dashboard/TransactionFilters";
@@ -23,42 +25,53 @@ import type { listTransactions } from "@/lib/services/admin-queries";
  * only difference between them is the scope the caller resolved, which is
  * decided by the guard on the page, never here.
  */
-export function TransactionsView({
+export async function TransactionsView({
   data,
   basePath,
 }: {
   data: Awaited<ReturnType<typeof listTransactions>>;
   basePath: string;
 }) {
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.views.transactions;
+
   return (
     <>
       <TransactionFilters basePath={basePath} />
 
       <div className="mb-4 mt-5 grid gap-3 sm:grid-cols-3">
-        <SummaryTile label="Matching transactions" value={String(data.total)} />
-        <SummaryTile label="Total in" value={formatMoney(data.totalIn)} tone="in" />
-        <SummaryTile label="Total out" value={formatMoney(data.totalOut)} tone="out" />
+        <SummaryTile label={copy.matching} value={String(data.total)} />
+        <SummaryTile
+          label={copy.totalIn}
+          value={formatMoney(data.totalIn)}
+          tone="in"
+        />
+        <SummaryTile
+          label={copy.totalOut}
+          value={formatMoney(data.totalOut)}
+          tone="out"
+        />
       </div>
 
       {data.transactions.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No transactions found"
-          description="No transactions match these filters. Try widening the date range or clearing the search."
+          title={copy.noneTitle}
+          description={copy.noneBody}
         />
       ) : (
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead align="right">Balance after</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{copy.colMember}</TableHead>
+                <TableHead>{d.common.reference}</TableHead>
+                <TableHead>{d.common.date}</TableHead>
+                <TableHead>{d.common.description}</TableHead>
+                <TableHead>{d.common.type}</TableHead>
+                <TableHead align="right">{d.common.amount}</TableHead>
+                <TableHead align="right">{copy.balanceAfter}</TableHead>
+                <TableHead>{d.common.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,11 +99,7 @@ export function TransactionsView({
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                    {t.createdAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(t.createdAt, locale)}
                   </TableCell>
 
                   <TableCell className="max-w-xs text-sm">

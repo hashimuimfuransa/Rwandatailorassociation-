@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { normalisePhone } from "@/lib/phone";
+import {
+  checkDistrictInProvince,
+  optionalDistrict,
+  optionalProvince,
+} from "@/lib/validation/rwanda";
 
 /**
  * Admin member enrolment.
@@ -54,7 +59,11 @@ function optionalPhone(message: string) {
     });
 }
 
-export const createMemberSchema = z.object({
+/**
+ * Every field of a member's file. Enrolment adds the status decision on top;
+ * editing takes it as it stands — see the two schemas below.
+ */
+const memberFieldsSchema = z.object({
   // Identity ----------------------------------------------------------------
   firstName: z.string().trim().min(2, "Enter the member's first name").max(60),
   lastName: z.string().trim().min(2, "Enter the member's last name").max(60),
@@ -118,8 +127,11 @@ export const createMemberSchema = z.object({
   // Address -----------------------------------------------------------------
   addressLine1: optionalText(160, "Address"),
   city: optionalText(80, "City"),
-  district: optionalText(80, "District"),
-  province: optionalText(80, "Province"),
+  // Chosen from Rwanda's fixed list rather than typed, and stored canonically,
+  // so a district breakdown groups every member of a district together
+  // regardless of who transcribed the form.
+  district: optionalDistrict(),
+  province: optionalProvince(),
 
   // Payment identifiers -----------------------------------------------------
   // Both are fallback matching keys when a payment carries no reference, which
@@ -141,16 +153,20 @@ export const createMemberSchema = z.object({
   nextOfKinPhone: optionalPhone("Enter a valid next of kin phone number"),
   nextOfKinRelation: optionalText(60, "Relationship"),
 
-  // Enrolment decision ------------------------------------------------------
-  /// Whether the member may transact immediately. An administrator entering a
-  /// completed paper application is vouching for it, so ACTIVE is the default;
-  /// PENDING_APPROVAL exists for a form that still needs a second pair of eyes.
-  status: z.enum(["ACTIVE", "PENDING_APPROVAL"]).default("ACTIVE"),
-
   /// Recorded on the audit entry. Not optional: creating a member is creating
   /// a claim on the association's money.
   note: optionalText(500, "Note"),
 });
+
+export const createMemberSchema = memberFieldsSchema
+  .extend({
+    // Enrolment decision ----------------------------------------------------
+    /// Whether the member may transact immediately. An administrator entering a
+    /// completed paper application is vouching for it, so ACTIVE is the default;
+    /// PENDING_APPROVAL exists for a form that still needs a second pair of eyes.
+    status: z.enum(["ACTIVE", "PENDING_APPROVAL"]).default("ACTIVE"),
+  })
+  .superRefine(checkDistrictInProvince);
 
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 
@@ -168,6 +184,8 @@ export type CreateMemberInput = z.infer<typeof createMemberSchema>;
  * been given. Editing a payment reference would orphan the payments already
  * matched by it and silently break the matching of future ones.
  */
-export const updateMemberSchema = createMemberSchema.omit({ status: true });
+export const updateMemberSchema = memberFieldsSchema.superRefine(
+  checkDistrictInProvince
+);
 
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;

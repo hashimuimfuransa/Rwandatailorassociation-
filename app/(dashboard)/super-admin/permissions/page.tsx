@@ -3,6 +3,9 @@ import { Check, KeyRound, Minus, ShieldAlert, Users } from "lucide-react";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { getPermissionMatrix } from "@/lib/services/admin-queries";
 import { ALL_PERMISSIONS } from "@/lib/auth/permissions";
+import { getDashboardCopy } from "@/lib/i18n/server";
+import { fill, pluralize } from "@/lib/i18n/fill";
+import { formatDate } from "@/lib/i18n/dates";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -24,14 +27,17 @@ export const dynamic = "force-dynamic";
 
 const ROLES: UserRole[] = ["MEMBER", "ADMIN", "SUPER_ADMIN"];
 
-const ROLE_LABEL: Record<UserRole, string> = {
-  MEMBER: "Member",
-  ADMIN: "Admin",
-  SUPER_ADMIN: "Super admin",
-};
-
 export default async function PlatformPermissionsPage() {
   await requireSuperAdmin("/super-admin/permissions");
+  const { d, locale } = await getDashboardCopy();
+  const copy = d.platform.permissions;
+
+  const roleLabel: Record<UserRole, string> = {
+    MEMBER: copy.roleMember,
+    ADMIN: copy.roleAdmin,
+    SUPER_ADMIN: copy.roleSuperAdmin,
+  };
+
   const { permissions, overrides } = await getPermissionMatrix();
 
   // The catalogue in code is the intended state; the table is what is being
@@ -52,57 +58,50 @@ export default async function PlatformPermissionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Permissions"
-        description="What each role may do, and every exception granted to an individual."
-      />
+      <PageHeader title={copy.title} description={copy.description} />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Permissions"
+          label={copy.count}
           value={String(permissions.length)}
-          hint={`${byCategory.size} categories`}
+          hint={pluralize(copy.categories, byCategory.size)}
           icon={KeyRound}
           tone="primary"
         />
         <StatCard
-          label="Active overrides"
+          label={copy.activeOverrides}
           value={String(activeOverrides.length)}
-          hint="Individual grants and revocations"
+          hint={copy.activeOverridesHint}
           icon={Users}
           tone={activeOverrides.length > 0 ? "warning" : "default"}
         />
         <StatCard
-          label="Revocations"
+          label={copy.revocations}
           value={String(revocations.length)}
-          hint="Taken away from someone's role"
+          hint={copy.revocationsHint}
           icon={ShieldAlert}
           tone={revocations.length > 0 ? "warning" : "success"}
         />
         <StatCard
-          label="Not in database"
+          label={copy.notInDatabase}
           value={String(missing.length)}
-          hint={
-            missing.length > 0
-              ? "Defined in code but never granted"
-              : "Catalogue is in sync"
-          }
+          hint={missing.length > 0 ? copy.notInDatabaseHint : copy.inSync}
           icon={ShieldAlert}
           tone={missing.length > 0 ? "danger" : "success"}
         />
       </StatGrid>
 
       {missing.length > 0 && (
-        <Alert variant="warning" title="Permission catalogue is out of sync">
-          {missing.length} permission(s) exist in <code>lib/auth/permissions.ts</code>{" "}
-          but have no row in the database, so nobody holds them regardless of
-          role: <code>{missing.join(", ")}</code>. Re-run the seed to reconcile.
+        <Alert variant="warning" title={copy.outOfSyncTitle}>
+          {pluralize(copy.outOfSyncBody, missing.length, {
+            codes: missing.join(", "),
+          })}
         </Alert>
       )}
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Role matrix
+          {copy.roleMatrix}
         </h2>
         <div className="space-y-5">
           {[...byCategory.entries()].map(([category, rows]) => (
@@ -114,10 +113,10 @@ export default async function PlatformPermissionsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Permission</TableHead>
+                      <TableHead>{copy.permission}</TableHead>
                       {ROLES.map((role) => (
                         <TableHead key={role} align="center">
-                          {ROLE_LABEL[role]}
+                          {roleLabel[role]}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -143,18 +142,22 @@ export default async function PlatformPermissionsPage() {
                             {permission.roles.includes(role) ? (
                               <span
                                 className="inline-flex size-6 items-center justify-center rounded-full bg-success/10 text-success"
-                                title={`${ROLE_LABEL[role]} holds this by default`}
+                                title={fill(copy.holdsByDefault, {
+                                  role: roleLabel[role],
+                                })}
                               >
                                 <Check className="size-3.5" aria-hidden="true" />
-                                <span className="sr-only">Granted</span>
+                                <span className="sr-only">{copy.granted}</span>
                               </span>
                             ) : (
                               <span
                                 className="inline-flex size-6 items-center justify-center rounded-full bg-ink/[0.05] text-ink-muted"
-                                title={`${ROLE_LABEL[role]} does not hold this`}
+                                title={fill(copy.doesNotHold, {
+                                  role: roleLabel[role],
+                                })}
                               >
                                 <Minus className="size-3.5" aria-hidden="true" />
-                                <span className="sr-only">Not granted</span>
+                                <span className="sr-only">{copy.notGranted}</span>
                               </span>
                             )}
                           </TableCell>
@@ -171,25 +174,22 @@ export default async function PlatformPermissionsPage() {
 
       <section>
         <h2 className="mb-3 font-heading text-lg font-semibold text-ink">
-          Individual overrides
+          {copy.individualOverrides}
         </h2>
         <TableWrapper>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Person</TableHead>
-                <TableHead>Permission</TableHead>
-                <TableHead>Effect</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Granted</TableHead>
+                <TableHead>{copy.colPerson}</TableHead>
+                <TableHead>{copy.permission}</TableHead>
+                <TableHead>{copy.colEffect}</TableHead>
+                <TableHead>{copy.colExpires}</TableHead>
+                <TableHead>{copy.colGranted}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {overrides.length === 0 ? (
-                <TableEmpty colSpan={5}>
-                  No individual overrides are in force — everyone holds exactly
-                  what their role gives them.
-                </TableEmpty>
+                <TableEmpty colSpan={5}>{copy.noOverrides}</TableEmpty>
               ) : (
                 overrides.map((override) => (
                   <TableRow key={override.id}>
@@ -199,7 +199,7 @@ export default async function PlatformPermissionsPage() {
                       </span>
                       <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
                         <StatusBadge status={override.userRole} size="sm" />
-                        {override.associationName ?? "Platform-wide"}
+                        {override.associationName ?? copy.platformWide}
                       </span>
                     </TableCell>
 
@@ -215,32 +215,24 @@ export default async function PlatformPermissionsPage() {
                     <TableCell>
                       <StatusBadge
                         status={override.granted ? "APPROVED" : "REJECTED"}
-                        label={override.granted ? "Granted" : "Revoked"}
+                        label={override.granted ? copy.granted : copy.revoked}
                         size="sm"
                       />
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
                       {override.expiresAt
-                        ? override.expiresAt.toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "Never"}
+                        ? formatDate(override.expiresAt, locale)
+                        : copy.never}
                       {override.expired && (
                         <span className="mt-0.5 block text-[11px] font-semibold text-ink-muted">
-                          expired — no longer in force
+                          {copy.expired}
                         </span>
                       )}
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap text-sm text-ink-muted">
-                      {override.createdAt.toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(override.createdAt, locale)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -251,9 +243,7 @@ export default async function PlatformPermissionsPage() {
       </section>
 
       <p className="rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink-muted">
-        Revocations beat grants: where two rules disagree about whether someone
-        may act, the answer is no. This screen reports what the database
-        enforces — hiding a menu item never protects anything on its own.
+        {copy.revocationsWinNote}
       </p>
     </div>
   );

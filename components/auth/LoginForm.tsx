@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
+import { useLanguage } from "@/components/LanguageProvider";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 
 interface LoginResponse {
@@ -19,6 +20,9 @@ interface LoginResponse {
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const { d } = useLanguage();
+  const copy = d.auth.login;
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +45,7 @@ export default function LoginForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload?.error?.message ?? "Unable to sign in. Please try again.");
+        setError(payload?.error?.message ?? copy.failed);
         setSubmitting(false);
         return;
       }
@@ -60,7 +64,7 @@ export default function LoginForm() {
       router.replace(destination);
       router.refresh();
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(d.common.serverUnreachable);
       setSubmitting(false);
     }
   }
@@ -71,8 +75,8 @@ export default function LoginForm() {
 
       <Field
         id="identifier"
-        label="Email or phone number"
-        hint="Use the email or phone number registered with the association"
+        label={copy.identifier}
+        hint={copy.identifierHint}
       >
         {(props) => (
           <Input
@@ -80,7 +84,7 @@ export default function LoginForm() {
             name="identifier"
             type="text"
             autoComplete="username"
-            placeholder="you@example.com or 0788123456"
+            placeholder={copy.identifierPlaceholder}
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
@@ -89,7 +93,7 @@ export default function LoginForm() {
         )}
       </Field>
 
-      <Field id="password" label="Password">
+      <Field id="password" label={copy.password}>
         {(props) => (
           <div className="relative">
             <Input
@@ -97,7 +101,7 @@ export default function LoginForm() {
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Enter your password"
+              placeholder={copy.passwordPlaceholder}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pr-12"
@@ -106,7 +110,7 @@ export default function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? copy.hidePassword : copy.showPassword}
               className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
             >
               {showPassword ? (
@@ -124,7 +128,7 @@ export default function LoginForm() {
           href="/forgot-password"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Forgot your password?
+          {copy.forgotPassword}
         </Link>
       </div>
 
@@ -132,12 +136,12 @@ export default function LoginForm() {
         {submitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            Signing in…
+            {copy.submitting}
           </>
         ) : (
           <>
             <LogIn className="size-4" aria-hidden="true" />
-            Sign in
+            {copy.submit}
           </>
         )}
       </Button>
